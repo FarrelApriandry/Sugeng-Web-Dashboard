@@ -1,0 +1,20 @@
+{
+	"pid": 3117563,
+	"port": 5432,
+	"url": "http://localhost:5432",
+	"urls": {
+		"local": [
+			"http://localhost:5432/"
+		],
+		"network": [
+			"http://192.168.100.145:5432/",
+			"http://100.73.234.59:5432/"
+		],
+		"networkInterfaceNames": [
+			"wlan0",
+			"tailscale0"
+		]
+	},
+	"background": false,
+	"startedAt": "2026-09-23T10:33:31.310Z"
+}

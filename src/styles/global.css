@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #0B0F14;
+    --bg-secondary: #11161D;
+    --bg-tertiary: #171D25;
+    --border: #202832;
+    --border-strong: #2A3440;
+    --text-primary: #E6EDF3;
+    --text-secondary: #9AA6B2;
+    --text-muted: #667381;
+    --critical: #EF4444;
+    --warning: #F59E0B;
+    --success: #22C55E;
+    --info: #3B82F6;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    antialiased: true;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Custom restrained scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0F14;
+}
+::-webkit-scrollbar-thumb {
+  background: #202832;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2A3440;
+}
+
+/* Critical marker pulse animation */
+@keyframes markerPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1.12); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.critical-pulse {
+  animation: markerPulse 2s infinite;
+}
