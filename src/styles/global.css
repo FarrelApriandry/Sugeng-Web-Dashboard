@@ -3,56 +3,131 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --bg-primary: #0B0F14;
-    --bg-secondary: #11161D;
-    --bg-tertiary: #171D25;
-    --border: #202832;
-    --border-strong: #2A3440;
-    --text-primary: #E6EDF3;
-    --text-secondary: #9AA6B2;
-    --text-muted: #667381;
-    --critical: #EF4444;
-    --warning: #F59E0B;
-    --success: #22C55E;
-    --info: #3B82F6;
+  /* ===== Mode gelap (ruang kontrol malam) ===== */
+  .theme-dark {
+    --bg-primary: #0b0f14;
+    --bg-secondary: #11161d;
+    --bg-tertiary: #1c232e;
+    --border: #2b3542;
+    --border-strong: #3d4a5c;
+    --text-primary: #f1f5f9;
+    --text-secondary: #c9d3de;
+    --text-muted: #9aa6b2;
+    --critical: #f87171;
+    --critical-bg: rgba(239, 68, 68, 0.14);
+    --warning: #fbbf24;
+    --warning-bg: rgba(245, 158, 11, 0.14);
+    --success: #4ade80;
+    --success-bg: rgba(34, 197, 94, 0.14);
+    --info: #60a5fa;
+  }
+
+  /* ===== Mode terang (default — kerja siang, usia 24–55) ===== */
+  .theme-light {
+    --bg-primary: #e9edf2;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --border: #c3cedb;
+    --border-strong: #8fa0b5;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #5b6b7f;
+    --critical: #b91c1c;
+    --critical-bg: #fee2e2;
+    --warning: #92400e;
+    --warning-bg: #fef3c7;
+    --success: #166534;
+    --success-bg: #dcfce7;
+    --info: #1d4ed8;
+  }
+
+  html {
+    font-size: 15.5px;
   }
 
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    antialiased: true;
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
   }
 
   code, pre, .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+
+  :focus-visible {
+    outline: 3px solid var(--info);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
 }
 
-/* Custom restrained scrollbars */
+@layer components {
+  .card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .card-inset {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+}
+
+/* Scrollbar lebar — mudah digeser */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 12px;
+  height: 12px;
 }
 ::-webkit-scrollbar-track {
-  background: #0B0F14;
+  background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: #202832;
+  background: var(--border-strong);
   border-radius: 9999px;
+  border: 3px solid var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2A3440;
+  background: var(--text-muted);
 }
 
-/* Critical marker pulse animation */
+/* Denyut marker kritis — diperhalus */
 @keyframes markerPulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-  70% { transform: scale(1.12); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  0% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+  70% { transform: scale(1.06); box-shadow: 0 0 0 9px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 .critical-pulse {
-  animation: markerPulse 2s infinite;
+  animation: markerPulse 2.6s infinite;
+}
+
+/* Leaflet: perbesar kontrol zoom agar mudah ditekan */
+.leaflet-bar a {
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  font-size: 20px !important;
+}
+.leaflet-container {
+  font-size: 14px;
+}
+.leaflet-popup-content {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+.leaflet-control-attribution {
+  font-size: 12px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .critical-pulse,
+  .animate-ping,
+  .animate-pulse {
+    animation: none !important;
+  }
 }

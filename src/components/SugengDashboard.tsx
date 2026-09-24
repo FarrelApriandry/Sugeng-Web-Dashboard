@@ -1,43 +1,92 @@
 import React, { useState, useEffect } from 'react';
 import type { TPSNode, CVRPSolution } from '../data/dummyData';
-import { DUMMY_TPS_NODES, INITIAL_CVRP_SOLUTION, POOL_DEPOT, TPSA_BANYUURIP } from '../data/dummyData';
+import { DUMMY_TPS_NODES, INITIAL_CVRP_SOLUTION } from '../data/dummyData';
 import { InteractiveMap } from './InteractiveMap';
-import { 
-  Trash2, 
-  MapPin, 
-  Truck, 
-  Activity, 
-  Sun, 
-  Battery, 
-  Zap, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Navigation, 
-  Search, 
-  RefreshCw, 
-  Cpu, 
-  Thermometer, 
-  Droplets, 
-  Wind, 
-  Radio,
-  Clock,
-  ExternalLink,
+import {
+  MapPin,
+  Truck,
+  Search,
+  RefreshCw,
+  AlertTriangle,
+  AlertCircle,
+  CheckCircle2,
+  Navigation,
+  Sun,
+  Moon,
+  ClipboardList,
+  Activity,
   ChevronRight,
-  ShieldAlert
+  Send,
+  Eye,
 } from 'lucide-react';
+
+type TabId = 'map' | 'dispatch' | 'tps' | 'telemetry';
+type Theme = 'light' | 'dark';
+type StatusLevel = 'critical' | 'warning' | 'optimal';
+
+/* ---------- Helper status & interpretasi bahasa awam (P1) ---------- */
+
+function getStatus(node: TPSNode): { level: StatusLevel; label: string; action: string } {
+  const isCritical =
+    node.currentVolumePercent >= 80 || node.gasStatusMQ135 === 'Tinggi (Bau Busuk)';
+  if (isCritical) return { level: 'critical', label: 'Penuh — Segera Angkut', action: 'Prioritas pengangkutan' };
+  if (node.currentVolumePercent >= 50)
+    return { level: 'warning', label: 'Hampir Penuh — Pantau', action: 'Jadwalkan pengangkutan' };
+  return { level: 'optimal', label: 'Aman', action: 'Kondisi normal' };
+}
+
+function interpretGas(ppm: number): string {
+  if (ppm >= 60) return 'Bau menyengat — segera angkut';
+  if (ppm >= 30) return 'Mulai berbau — perlu perhatian';
+  return 'Tidak berbau — aman';
+}
+
+function interpretMethane(ppm: number): string {
+  if (ppm >= 250) return 'Tinggi — jauhkan dari api';
+  if (ppm >= 100) return 'Naik — pantau berkala';
+  return 'Aman';
+}
+
+function interpretBattery(volt: number): string {
+  if (volt >= 3.9) return 'Baterai penuh — normal';
+  if (volt >= 3.6) return 'Baterai cukup — normal';
+  return 'Baterai lemah — periksa panel surya';
+}
+
+function statusStyle(level: StatusLevel, theme: Theme): React.CSSProperties {
+  if (level === 'critical')
+    return theme === 'light'
+      ? { backgroundColor: '#fee2e2', color: '#b91c1c', border: '2px solid #b91c1c' }
+      : { backgroundColor: 'rgba(239,68,68,.15)', color: '#f87171', border: '2px solid #f87171' };
+  if (level === 'warning')
+    return theme === 'light'
+      ? { backgroundColor: '#fef3c7', color: '#92400e', border: '2px solid #92400e' }
+      : { backgroundColor: 'rgba(245,158,11,.15)', color: '#fbbf24', border: '2px solid #fbbf24' };
+  return theme === 'light'
+    ? { backgroundColor: '#dcfce7', color: '#166534', border: '2px solid #166534' }
+    : { backgroundColor: 'rgba(34,197,94,.15)', color: '#4ade80', border: '2px solid #4ade80' };
+}
+
+const FILTER_LABEL: Record<'all' | StatusLevel, string> = {
+  all: 'Semua',
+  critical: 'Penuh ≥ 80%',
+  warning: 'Hampir penuh',
+  optimal: 'Aman',
+};
 
 export const SugengDashboard: React.FC = () => {
   const [nodes, setNodes] = useState<TPSNode[]>(DUMMY_TPS_NODES);
-  const [cvrp, setCvrp] = useState<CVRPSolution>(INITIAL_CVRP_SOLUTION);
+  const [cvrp] = useState<CVRPSolution>(INITIAL_CVRP_SOLUTION);
   const [selectedNode, setSelectedNode] = useState<TPSNode | null>(DUMMY_TPS_NODES[0]);
-  const [activeTab, setActiveTab] = useState<'map' | 'dispatch' | 'tps' | 'telemetry'>('map');
+  const [activeTab, setActiveTab] = useState<TabId>('map');
   const [showRoute, setShowRoute] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'critical' | 'warning' | 'optimal'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | StatusLevel>('all');
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<string>('');
+  const [theme, setTheme] = useState<Theme>('light'); // P0: terang sebagai default
+  const [dispatchSent, setDispatchSent] = useState<boolean>(false);
 
-  // Live clock WIB
   useEffect(() => {
     const updateClock = () => {
       const now = new Date();
@@ -49,19 +98,17 @@ export const SugengDashboard: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const criticalNodesCount = nodes.filter(
-    (n) => n.currentVolumePercent >= 80 || n.gasStatusMQ135 === 'Tinggi (Bau Busuk)'
-  ).length;
+  const criticalNodes = nodes.filter((n) => getStatus(n).level === 'critical');
+  const warningNodes = nodes.filter((n) => getStatus(n).level === 'warning');
 
   const filteredNodes = nodes.filter((node) => {
-    const matchesSearch = node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      node.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      node.id.toLowerCase().includes(searchQuery.toLowerCase());
-
-    if (statusFilter === 'critical') return matchesSearch && (node.currentVolumePercent >= 80 || node.gasStatusMQ135 === 'Tinggi (Bau Busuk)');
-    if (statusFilter === 'warning') return matchesSearch && node.currentVolumePercent >= 50 && node.currentVolumePercent < 80;
-    if (statusFilter === 'optimal') return matchesSearch && node.currentVolumePercent < 50;
-    return matchesSearch;
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      node.name.toLowerCase().includes(q) ||
+      node.address.toLowerCase().includes(q) ||
+      node.id.toLowerCase().includes(q);
+    if (statusFilter === 'all') return matchesSearch;
+    return matchesSearch && getStatus(node).level === statusFilter;
   });
 
   const handleSimulateTelemetry = () => {
@@ -71,558 +118,737 @@ export const SugengDashboard: React.FC = () => {
         prev.map((node) => {
           const delta = Math.floor(Math.random() * 5) - 2;
           const newVol = Math.max(15, Math.min(96, node.currentVolumePercent + delta));
-          const newDist = Math.max(22, Math.round(node.totalHeightCm - (newVol * (node.totalHeightCm - node.blindZoneCm)) / 100));
-          return {
-            ...node,
-            currentVolumePercent: newVol,
-            measuredDistanceCm: newDist,
-            lastTelemetry: 'Baru saja',
-          };
+          const newDist = Math.max(
+            22,
+            Math.round(node.totalHeightCm - (newVol * (node.totalHeightCm - node.blindZoneCm)) / 100)
+          );
+          return { ...node, currentVolumePercent: newVol, measuredDistanceCm: newDist, lastTelemetry: 'Baru saja' };
         })
       );
       setIsSimulating(false);
     }, 500);
   };
 
+  const handleSendDispatch = () => {
+    setDispatchSent(true);
+    setTimeout(() => setDispatchSent(false), 4000);
+  };
+
+  const utilization = Math.round((cvrp.assignedLoadLiters / cvrp.truckCapacityLiters) * 100);
+
+  const tabDefs: { id: TabId; step: string; label: string; icon: React.ReactNode }[] = [
+    { id: 'map', step: '1', label: 'Prioritas & Peta', icon: <MapPin className="w-5 h-5" /> },
+    { id: 'dispatch', step: '2', label: 'Kirim Armada', icon: <Truck className="w-5 h-5" /> },
+    { id: 'tps', step: '3', label: 'Daftar TPS', icon: <ClipboardList className="w-5 h-5" /> },
+    { id: 'telemetry', step: '4', label: 'Data Sensor', icon: <Activity className="w-5 h-5" /> },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#0B0F14] text-[#E6EDF3] flex flex-col font-sans selection:bg-[#22C55E] selection:text-[#0B0F14]">
-      
-      {/* 5. GLOBAL HEADER */}
-      <header className="sticky top-0 z-50 bg-[#11161D]/95 backdrop-blur-md border-b border-[#202832] px-4 lg:px-6 py-2.5">
-        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-          
-          {/* Brand */}
-          <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
-            <div>
-              <h1 className="font-mono font-bold text-sm tracking-wide text-[#E6EDF3]">
-                MWOC <span className="text-[#667381]">//</span> MAGELANG WASTE OPERATIONS CENTER
-              </h1>
-              <p className="text-[10px] font-mono text-[#9AA6B2]">
-                IoT Telemetry & CVRP Fleet Management
-              </p>
-            </div>
-          </div>
-
-          {/* Center Navigation */}
-          <nav className="flex items-center gap-1 bg-[#171D25] p-1 rounded-[6px] border border-[#202832] text-xs font-mono">
-            <button
-              onClick={() => setActiveTab('map')}
-              className={`px-3 py-1.5 rounded-[4px] transition-colors ${
-                activeTab === 'map' ? 'bg-[#202832] text-[#E6EDF3] font-semibold' : 'text-[#9AA6B2] hover:text-[#E6EDF3]'
-              }`}
-            >
-              MAP
-            </button>
-            <button
-              onClick={() => setActiveTab('dispatch')}
-              className={`px-3 py-1.5 rounded-[4px] transition-colors ${
-                activeTab === 'dispatch' ? 'bg-[#202832] text-[#E6EDF3] font-semibold' : 'text-[#9AA6B2] hover:text-[#E6EDF3]'
-              }`}
-            >
-              DISPATCH
-            </button>
-            <button
-              onClick={() => setActiveTab('tps')}
-              className={`px-3 py-1.5 rounded-[4px] transition-colors ${
-                activeTab === 'tps' ? 'bg-[#202832] text-[#E6EDF3] font-semibold' : 'text-[#9AA6B2] hover:text-[#E6EDF3]'
-              }`}
-            >
-              TPS STATUS
-            </button>
-            <button
-              onClick={() => setActiveTab('telemetry')}
-              className={`px-3 py-1.5 rounded-[4px] transition-colors ${
-                activeTab === 'telemetry' ? 'bg-[#202832] text-[#E6EDF3] font-semibold' : 'text-[#9AA6B2] hover:text-[#E6EDF3]'
-              }`}
-            >
-              TELEMETRY
-            </button>
-          </nav>
-
-          {/* Right System Status & Simulation */}
-          <div className="flex items-center gap-3">
-            <div className="hidden xl:flex items-center gap-3 font-mono text-[11px] bg-[#171D25] px-3 py-1.5 rounded-[6px] border border-[#202832]">
-              <span className="flex items-center gap-1.5 text-[#22C55E]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-ping"></span>
-                LIVE
-              </span>
-              <span className="text-[#202832]">|</span>
-              <span className="text-[#9AA6B2]">{nodes.length} TPS</span>
-              <span className="text-[#202832]">|</span>
-              <span className="text-[#9AA6B2]">1 TRUCK</span>
-              <span className="text-[#202832]">|</span>
-              <span className="text-[#EF4444] font-semibold">{criticalNodesCount} ALERTS</span>
-              <span className="text-[#202832]">|</span>
-              <span className="text-[#E6EDF3]">{currentTime}</span>
+    <div
+      className={theme === 'light' ? 'theme-light' : 'theme-dark'}
+      style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', minHeight: '100vh' }}
+    >
+      <div className="flex flex-col min-h-screen font-sans">
+        {/* ===== HEADER (P0: Bahasa Indonesia, tombol ≥44px) ===== */}
+        <header
+          className="sticky top-0 z-50 border-b px-4 lg:px-6 py-3"
+          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+        >
+          <div className="max-w-[1600px] mx-auto flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h1 className="font-bold text-lg leading-snug">
+                  SUGENG <span style={{ color: 'var(--text-muted)' }}>•</span> Pusat Operasi Sampah Magelang
+                </h1>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Pantau TPS & kirim armada — Dinas Lingkungan Hidup Kota Magelang
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                  aria-label={theme === 'light' ? 'Ganti ke mode gelap' : 'Ganti ke mode terang'}
+                  className="flex items-center gap-2 px-4 min-h-[44px] rounded-lg text-sm font-semibold border transition-colors"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderColor: 'var(--border-strong)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                  <span>{theme === 'light' ? 'Mode Gelap' : 'Mode Terang'}</span>
+                </button>
+                <button
+                  onClick={handleSimulateTelemetry}
+                  disabled={isSimulating}
+                  className="flex items-center gap-2 px-4 min-h-[44px] rounded-lg text-sm font-semibold border transition-colors"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderColor: 'var(--border-strong)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <RefreshCw className={`w-5 h-5 ${isSimulating ? 'animate-spin' : ''}`} />
+                  <span>{isSimulating ? 'Memperbarui…' : 'Perbarui Data'}</span>
+                </button>
+              </div>
             </div>
 
-            <button
-              onClick={handleSimulateTelemetry}
-              disabled={isSimulating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-[#171D25] hover:bg-[#202832] border border-[#202832] text-xs font-mono text-[#E6EDF3] transition-all"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-[#22C55E] ${isSimulating ? 'animate-spin' : ''}`} />
-              <span>SIMULATE TELEMETRY</span>
-            </button>
-          </div>
-
-        </div>
-      </header>
-
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 lg:p-4">
-
-        {/* ================= TAB 1: MAP & OPERATIONS CENTER ================= */}
-        {activeTab === 'map' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-            
-            {/* LEFT SIDEBAR: TPS ASSET EXPLORER (Col 3) */}
-            <div className="lg:col-span-3 bg-[#11161D] border border-[#202832] rounded-[8px] p-3 flex flex-col gap-3 h-[600px] shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold tracking-wider text-[#9AA6B2]">TPS ASSETS</span>
-                <span className="font-mono text-[10px] bg-[#171D25] px-2 py-0.5 rounded-[999px] text-[#E6EDF3] border border-[#202832]">
-                  {filteredNodes.length} units
-                </span>
-              </div>
-
-              {/* Search input */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-[#667381]" />
-                <input
-                  type="text"
-                  placeholder="Search TPS or address..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#0B0F14] border border-[#202832] rounded-[6px] pl-8 pr-3 py-1.5 text-xs font-mono text-[#E6EDF3] placeholder-[#667381] focus:outline-none focus:border-[#2A3440]"
-                />
-              </div>
-
-              {/* Filters */}
-              <div className="grid grid-cols-4 gap-1 text-[10px] font-mono">
-                {(['all', 'critical', 'warning', 'optimal'] as const).map((f) => (
+            {/* Navigasi langkah 1→4 (P2: alur Lihat–Kirim–Pantau) */}
+            <nav aria-label="Langkah kerja" className="flex flex-wrap items-center gap-2">
+              {tabDefs.map((t) => {
+                const active = activeTab === t.id;
+                return (
                   <button
-                    key={f}
-                    onClick={() => setStatusFilter(f)}
-                    className={`py-1 rounded-[4px] capitalize text-center border transition-all ${
-                      statusFilter === f
-                        ? 'bg-[#202832] text-[#E6EDF3] border-[#2A3440] font-bold'
-                        : 'bg-[#0B0F14] text-[#9AA6B2] border-[#202832] hover:text-[#E6EDF3]'
-                    }`}
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    aria-current={active ? 'page' : undefined}
+                    className="flex items-center gap-2 px-4 min-h-[48px] rounded-lg text-base font-bold border transition-all"
+                    style={
+                      active
+                        ? { backgroundColor: 'var(--text-primary)', color: 'var(--bg-secondary)', borderColor: 'var(--text-primary)' }
+                        : {
+                            backgroundColor: 'var(--bg-tertiary)',
+                            color: 'var(--text-secondary)',
+                            borderColor: 'var(--border)',
+                          }
+                    }
                   >
-                    {f}
-                  </button>
-                ))}
-              </div>
-
-              {/* TPS List */}
-              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
-                {filteredNodes.map((node) => {
-                  const isSelected = selectedNode?.id === node.id;
-                  const isCritical = node.currentVolumePercent >= 80 || node.gasStatusMQ135 === 'Tinggi (Bau Busuk)';
-
-                  return (
-                    <div
-                      key={node.id}
-                      onClick={() => setSelectedNode(node)}
-                      className={`p-2.5 rounded-[6px] border cursor-pointer transition-all ${
-                        isSelected
-                          ? 'bg-[#171D25] border-[#2A3440]'
-                          : isCritical
-                          ? 'bg-[#1a1214] border-red-950 hover:border-red-900'
-                          : 'bg-[#0B0F14] border-[#202832] hover:border-[#2A3440]'
-                      }`}
+                    <span
+                      aria-hidden
+                      className="flex items-center justify-center w-7 h-7 rounded-full text-sm font-extrabold border"
+                      style={
+                        active
+                          ? { borderColor: 'currentColor' }
+                          : { borderColor: 'var(--border-strong)' }
+                      }
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10px] text-[#9AA6B2]">{node.id}</span>
-                        <span className={`font-mono text-xs font-bold ${
-                          isCritical ? 'text-[#EF4444]' : node.currentVolumePercent >= 50 ? 'text-[#F59E0B]' : 'text-[#22C55E]'
-                        }`}>
-                          {node.currentVolumePercent}% FULL
-                        </span>
-                      </div>
-                      <p className="font-sans text-xs font-medium text-[#E6EDF3] mt-0.5 truncate">{node.name}</p>
-                      <div className="flex items-center justify-between text-[10px] font-mono text-[#667381] mt-1.5 pt-1.5 border-t border-[#202832]">
-                        <span>NH₃: {node.gasPpmMQ135} ppm</span>
-                        <span>BAT: {node.batteryVoltage}V</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      {t.step}
+                    </span>
+                    {t.icon}
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
 
-            {/* CENTER GIS MAP (Col 6) */}
-            <div className="lg:col-span-6 h-[500px] lg:h-[600px]">
-              <InteractiveMap
-                nodes={nodes}
-                cvrp={cvrp}
-                selectedNode={selectedNode}
-                onSelectNode={(node) => setSelectedNode(node)}
-                showRoute={showRoute}
-              />
-            </div>
-
-            {/* RIGHT COLUMN: SELECTED TPS PANEL & LIVE ALERTS (Col 3) */}
-            <div className="lg:col-span-3 flex flex-col gap-4 h-[600px] overflow-y-auto">
-              
-              {/* Selected TPS Card */}
-              <div className="bg-[#11161D] border border-[#202832] rounded-[8px] p-4 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-[#202832]">
-                  <span className="font-mono text-xs text-[#9AA6B2]">SELECTED ASSET</span>
-                  <span className={`font-mono text-[10px] px-2 py-0.5 rounded-[999px] border ${
-                    selectedNode && selectedNode.currentVolumePercent >= 80 
-                      ? 'bg-red-950/60 text-red-400 border-red-900' 
-                      : 'bg-emerald-950/60 text-emerald-400 border-emerald-900'
-                  }`}>
-                    {selectedNode?.systemStatus || 'Normal'}
-                  </span>
-                </div>
-
-                {selectedNode ? (
-                  <div className="space-y-3">
-                    <div>
-                      <h3 className="font-sans font-bold text-sm text-[#E6EDF3]">{selectedNode.name}</h3>
-                      <p className="font-mono text-[11px] text-[#667381] mt-0.5">{selectedNode.id} • {selectedNode.address}</p>
-                    </div>
-
-                    {/* Fill level progress */}
-                    <div className="space-y-1 bg-[#0B0F14] p-3 rounded-[6px] border border-[#202832]">
-                      <div className="flex justify-between text-xs font-mono">
-                        <span className="text-[#9AA6B2]">FILL LEVEL</span>
-                        <span className="font-bold text-[#E6EDF3]">{selectedNode.currentVolumePercent}%</span>
-                      </div>
-                      <div className="w-full bg-[#171D25] h-2 rounded-[999px] overflow-hidden border border-[#202832]">
-                        <div 
-                          className={`h-full rounded-[999px] ${
-                            selectedNode.currentVolumePercent >= 80 ? 'bg-[#EF4444]' : selectedNode.currentVolumePercent >= 50 ? 'bg-[#F59E0B]' : 'bg-[#22C55E]'
-                          }`}
-                          style={{ width: `${selectedNode.currentVolumePercent}%` }}
-                        />
-                      </div>
-                      <p className="text-[10px] font-mono text-[#667381] pt-0.5">Sensor Distance: {selectedNode.measuredDistanceCm} cm</p>
-                    </div>
-
-                    {/* Telemetry grid */}
-                    <div className="grid grid-cols-2 gap-2 font-mono text-xs">
-                      <div className="bg-[#0B0F14] p-2.5 rounded-[6px] border border-[#202832]">
-                        <span className="text-[10px] text-[#667381] block">NH₃ GAS</span>
-                        <span className="font-bold text-[#E6EDF3]">{selectedNode.gasPpmMQ135} ppm</span>
-                      </div>
-                      <div className="bg-[#0B0F14] p-2.5 rounded-[6px] border border-[#202832]">
-                        <span className="text-[10px] text-[#667381] block">BATTERY</span>
-                        <span className="font-bold text-[#22C55E]">{selectedNode.batteryVoltage} V</span>
-                      </div>
-                      <div className="bg-[#0B0F14] p-2.5 rounded-[6px] border border-[#202832]">
-                        <span className="text-[10px] text-[#667381] block">TEMPERATURE</span>
-                        <span className="font-bold text-[#E6EDF3]">{selectedNode.temperatureCelsius} °C</span>
-                      </div>
-                      <div className="bg-[#0B0F14] p-2.5 rounded-[6px] border border-[#202832]">
-                        <span className="text-[10px] text-[#667381] block">SOLAR PANEL</span>
-                        <span className="font-bold text-[#F59E0B]">{selectedNode.solarCurrentMa} mA</span>
-                      </div>
-                    </div>
-
-                    <div className="text-[10px] font-mono text-[#667381] pt-1 flex items-center justify-between">
-                      <span>Telemetry: {selectedNode.lastTelemetry}</span>
-                      <span className="text-[#22C55E]">● ONLINE</span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs font-mono text-[#667381] py-8 text-center">No TPS selected</p>
-                )}
-              </div>
-
-              {/* Live Alerts Panel */}
-              <div className="bg-[#11161D] border border-[#202832] rounded-[8px] p-3 space-y-2.5">
-                <div className="flex items-center justify-between border-b border-[#202832] pb-2">
-                  <span className="font-mono text-xs font-bold text-[#EF4444] flex items-center gap-1.5">
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                    LIVE ALERTS
-                  </span>
-                  <span className="font-mono text-[10px] bg-red-950 text-red-400 px-1.5 py-0.5 rounded border border-red-900">3 Active</span>
-                </div>
-
-                <div className="space-y-2 font-mono text-xs">
-                  <div className="bg-[#0B0F14] p-2.5 rounded-[6px] border border-[#202832] space-y-1">
-                    <div className="flex justify-between text-[11px]">
-                      <strong className="text-[#EF4444]">NODE-MGL-01</strong>
-                      <span className="text-[#667381]">1 min ago</span>
-                    </div>
-                    <p className="text-[11px] text-[#9AA6B2]">Fill level reached 92% (Pasar Rejowinangun)</p>
-                  </div>
-
-                  <div className="bg-[#0B0F14] p-2.5 rounded-[6px] border border-[#202832] space-y-1">
-                    <div className="flex justify-between text-[11px]">
-                      <strong className="text-[#EF4444]">NODE-MGL-05</strong>
-                      <span className="text-[#667381]">3 min ago</span>
-                    </div>
-                    <p className="text-[11px] text-[#9AA6B2]">High NH₃ gas detected (71 ppm - UNTIDAR)</p>
-                  </div>
-
-                  <div className="bg-[#0B0F14] p-2.5 rounded-[6px] border border-[#202832] space-y-1">
-                    <div className="flex justify-between text-[11px]">
-                      <strong className="text-[#F59E0B]">NODE-MGL-03</strong>
-                      <span className="text-[#667381]">5 min ago</span>
-                    </div>
-                    <p className="text-[11px] text-[#9AA6B2]">Solar charging current low (65 mA - Mendung)</p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        )}
-
-        {/* ================= TAB 2: DISPATCHER & CVRP ================= */}
-        {activeTab === 'dispatch' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            
-            {/* Left Truck Status Card */}
-            <div className="lg:col-span-5 bg-[#11161D] border border-[#202832] rounded-[8px] p-4 space-y-4">
-              <div className="flex items-center justify-between border-b border-[#202832] pb-2">
-                <div>
-                  <span className="font-mono text-xs text-[#9AA6B2]">DISPATCHER // FLEET OPS</span>
-                  <h3 className="font-sans font-bold text-base text-[#E6EDF3] mt-0.5">{cvrp.truckId}</h3>
-                </div>
-                <span className="font-mono text-xs bg-emerald-950 text-emerald-400 px-2 py-1 rounded border border-emerald-900">
-                  ● ACTIVE ROUTE
+            {/* Ringkasan selalu tampil (P1) */}
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 rounded-lg text-sm font-semibold border"
+              style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border)' }}
+            >
+              <span className="flex items-center gap-2" style={{ color: 'var(--success)' }}>
+                <span aria-hidden className="w-2.5 h-2.5 rounded-full bg-current animate-pulse" />
+                Data langsung
+              </span>
+              <span>{nodes.length} TPS dipantau</span>
+              <span style={statusStyle('critical', theme)} className="px-3 py-1 rounded-full text-sm font-extrabold">
+                ⚠ {criticalNodes.length} TPS penuh — segera angkut
+              </span>
+              {warningNodes.length > 0 && (
+                <span style={statusStyle('warning', theme)} className="px-3 py-1 rounded-full text-sm font-extrabold">
+                  {warningNodes.length} hampir penuh
                 </span>
-              </div>
+              )}
+              <span className="ml-auto tabular-nums">{currentTime}</span>
+            </div>
+          </div>
+        </header>
 
-              {/* Capacity Bar */}
-              <div className="bg-[#0B0F14] p-3.5 rounded-[6px] border border-[#202832] space-y-2 font-mono">
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#9AA6B2]">TRUCK CAPACITY</span>
-                  <span className="font-bold text-[#E6EDF3]">{cvrp.assignedLoadLiters} / {cvrp.truckCapacityLiters} L</span>
+        {/* ===== ISI ===== */}
+        <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 lg:p-5">
+          {/* ---- LANGKAH 1: Prioritas & Peta ---- */}
+          {activeTab === 'map' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+              {/* Daftar TPS */}
+              <section
+                aria-label="Daftar TPS"
+                className="lg:col-span-3 card p-4 flex flex-col gap-3 lg:h-[640px]"
+              >
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-extrabold">Daftar TPS</h2>
+                  <span
+                    className="text-sm font-bold px-3 py-1 rounded-full border"
+                    style={{ borderColor: 'var(--border-strong)' }}
+                  >
+                    {filteredNodes.length} lokasi
+                  </span>
                 </div>
-                <div className="w-full bg-[#171D25] h-2.5 rounded-[999px] overflow-hidden border border-[#202832]">
-                  <div 
-                    className="bg-[#3B82F6] h-full rounded-[999px]"
-                    style={{ width: `${(cvrp.assignedLoadLiters / cvrp.truckCapacityLiters) * 100}%` }}
+                <div className="relative">
+                  <Search className="w-5 h-5 absolute left-3 top-3.5" style={{ color: 'var(--text-muted)' }} />
+                  <input
+                    type="search"
+                    aria-label="Cari TPS berdasarkan nama atau alamat"
+                    placeholder="Cari nama TPS atau alamat…"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full rounded-lg pl-11 pr-3 min-h-[48px] text-base border"
+                    style={{
+                      backgroundColor: 'var(--bg-tertiary)',
+                      borderColor: 'var(--border-strong)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
                 </div>
-                <div className="flex justify-between text-[11px] text-[#667381] pt-1">
-                  <span>Utilization: 69.7%</span>
-                  <span>Driver: {cvrp.truckDriver}</span>
+                <div className="grid grid-cols-2 gap-2" role="group" aria-label="Saring berdasarkan kondisi">
+                  {(['all', 'critical', 'warning', 'optimal'] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setStatusFilter(f)}
+                      aria-pressed={statusFilter === f}
+                      className="min-h-[48px] px-2 rounded-lg text-sm font-bold border transition-all"
+                      style={
+                        statusFilter === f
+                          ? { backgroundColor: 'var(--text-primary)', color: 'var(--bg-secondary)', borderColor: 'var(--text-primary)' }
+                          : { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }
+                      }
+                    >
+                      {FILTER_LABEL[f]}
+                    </button>
+                  ))}
                 </div>
-              </div>
-
-              {/* CVRP Stats */}
-              <div className="grid grid-cols-3 gap-2 font-mono text-xs">
-                <div className="bg-[#0B0F14] p-3 rounded-[6px] border border-[#202832] text-center">
-                  <span className="text-[10px] text-[#667381] block">TOTAL DISTANCE</span>
-                  <span className="text-sm font-bold text-[#E6EDF3]">{cvrp.totalDistanceKm} km</span>
-                </div>
-                <div className="bg-[#0B0F14] p-3 rounded-[6px] border border-[#202832] text-center">
-                  <span className="text-[10px] text-[#667381] block">DISTANCE SAVED</span>
-                  <span className="text-sm font-bold text-[#22C55E]">-{cvrp.distanceSavedKm} km</span>
-                </div>
-                <div className="bg-[#0B0F14] p-3 rounded-[6px] border border-[#202832] text-center">
-                  <span className="text-[10px] text-[#667381] block">FUEL SAVED</span>
-                  <span className="text-sm font-bold text-[#F59E0B]">{cvrp.fuelSavedLiters} L</span>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <a
-                  href="https://maps.google.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2.5 rounded-[6px] bg-[#3B82F6] hover:bg-blue-600 text-white font-mono font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-md"
-                >
-                  <span>KIRIM KE SUPIR (NAVIGASI)</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-            </div>
-
-            {/* Right Waypoints Timeline */}
-            <div className="lg:col-span-7 bg-[#11161D] border border-[#202832] rounded-[8px] p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-[#202832] pb-2">
-                <span className="font-mono text-xs font-bold text-[#9AA6B2]">TURN-BY-TURN WAYPOINTS (CVRP OR-TOOLS)</span>
-                <span className="font-mono text-[10px] text-[#22C55E]">Optimal Route Generated</span>
-              </div>
-
-              <div className="space-y-2 font-mono text-xs">
-                {cvrp.waypoints.map((wp) => (
-                  <div
-                    key={wp.step}
-                    className={`p-3 rounded-[6px] border flex items-center justify-between ${
-                      wp.type === 'depot' ? 'bg-blue-950/20 border-blue-900/50' :
-                      wp.type === 'landfill' ? 'bg-purple-950/20 border-purple-900/50' :
-                      'bg-[#0B0F14] border-[#202832]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-[4px] bg-[#171D25] text-[#E6EDF3] border border-[#202832] flex items-center justify-center text-[11px] font-bold">
-                        {wp.step}
-                      </span>
-                      <div>
-                        <p className="font-sans font-bold text-xs text-[#E6EDF3]">{wp.title}</p>
-                        <p className="text-[10px] text-[#667381] mt-0.5">
-                          {wp.pickupVolumeLiters > 0 ? `+${wp.pickupVolumeLiters} Liter • ` : ''}
-                          Est: {wp.estimatedArrival}
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className={`text-[10px] px-2 py-0.5 rounded-[999px] border ${
-                      wp.status === 'Selesai' ? 'bg-emerald-950 text-emerald-400 border-emerald-900' :
-                      wp.status === 'Menuju Lokasi' ? 'bg-blue-950 text-blue-400 border-blue-900 animate-pulse' :
-                      'bg-[#171D25] text-[#667381] border-[#202832]'
-                    }`}>
-                      {wp.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* ================= TAB 3: TPS STATUS TABLE ================= */}
-        {activeTab === 'tps' && (
-          <div className="bg-[#11161D] border border-[#202832] rounded-[8px] p-4 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#202832] pb-3">
-              <div>
-                <span className="font-mono text-xs text-[#9AA6B2]">ASSET INVENTORY</span>
-                <h3 className="font-sans font-bold text-base text-[#E6EDF3] mt-0.5">Semua Titik TPS Kota Magelang</h3>
-              </div>
-              <span className="font-mono text-xs bg-[#171D25] text-[#E6EDF3] px-3 py-1 rounded-[6px] border border-[#202832]">
-                Total: {nodes.length} Nodes
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left font-mono text-xs">
-                <thead>
-                  <tr className="border-b border-[#202832] text-[#667381] text-[11px]">
-                    <th className="pb-3 font-medium">NODE ID</th>
-                    <th className="pb-3 font-medium">NAMA TPS & ALAMAT</th>
-                    <th className="pb-3 font-medium">FILL LEVEL</th>
-                    <th className="pb-3 font-medium">GAS MQ-135</th>
-                    <th className="pb-3 font-medium">METANA MQ-4</th>
-                    <th className="pb-3 font-medium">BATT / SOLAR</th>
-                    <th className="pb-3 font-medium">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#202832]">
-                  {nodes.map((n) => {
-                    const isCritical = n.currentVolumePercent >= 80 || n.gasStatusMQ135 === 'Tinggi (Bau Busuk)';
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                  {filteredNodes.map((node) => {
+                    const st = getStatus(node);
+                    const isSelected = selectedNode?.id === node.id;
                     return (
-                      <tr key={n.id} className="hover:bg-[#171D25]/50 transition-colors">
-                        <td className="py-3 text-[#9AA6B2]">{n.id}</td>
-                        <td className="py-3 font-sans">
-                          <p className="font-bold text-[#E6EDF3]">{n.name}</p>
-                          <p className="text-[11px] text-[#667381]">{n.address}</p>
-                        </td>
-                        <td className="py-3">
-                          <span className={`font-bold ${isCritical ? 'text-[#EF4444]' : 'text-[#22C55E]'}`}>
-                            {n.currentVolumePercent}%
+                      <button
+                        key={node.id}
+                        onClick={() => setSelectedNode(node)}
+                        aria-pressed={isSelected}
+                        aria-label={`${node.name}, sampah ${node.currentVolumePercent} persen, ${st.label}`}
+                        className="w-full text-left p-3 rounded-lg border transition-all min-h-[64px]"
+                        style={
+                          isSelected
+                            ? { borderColor: 'var(--info)', borderWidth: 3, backgroundColor: 'var(--bg-tertiary)' }
+                            : { borderColor: 'var(--border)', backgroundColor: 'var(--bg-tertiary)' }
+                        }
+                      >
+                        <span className="flex items-center gap-2">
+                          {st.level === 'critical' ? (
+                            <AlertTriangle className="w-6 h-6 shrink-0" style={{ color: 'var(--critical)' }} aria-hidden />
+                          ) : st.level === 'warning' ? (
+                            <AlertCircle className="w-6 h-6 shrink-0" style={{ color: 'var(--warning)' }} aria-hidden />
+                          ) : (
+                            <CheckCircle2 className="w-6 h-6 shrink-0" style={{ color: 'var(--success)' }} aria-hidden />
+                          )}
+                          <span className="text-xl font-extrabold tabular-nums">{node.currentVolumePercent}%</span>
+                          <span
+                            className="ml-auto text-sm font-extrabold px-2.5 py-1 rounded-full border"
+                            style={statusStyle(st.level, theme)}
+                          >
+                            {st.level === 'critical' ? 'PENUH' : st.level === 'warning' ? 'HAMPIR' : 'AMAN'}
                           </span>
-                          <span className="text-[10px] text-[#667381] block">({n.measuredDistanceCm} cm)</span>
-                        </td>
-                        <td className="py-3 text-[#E6EDF3]">{n.gasPpmMQ135} ppm</td>
-                        <td className="py-3 text-[#E6EDF3]">{n.methanePpmMQ4} ppm</td>
-                        <td className="py-3 text-[#22C55E]">{n.batteryVoltage}V <span className="text-[#F59E0B]">({n.solarCurrentMa}mA)</span></td>
-                        <td className="py-3">
-                          <span className={`px-2 py-0.5 rounded-[999px] text-[10px] border ${
-                            isCritical ? 'bg-red-950 text-red-400 border-red-900' : 'bg-emerald-950 text-emerald-400 border-emerald-900'
-                          }`}>
-                            {n.systemStatus}
-                          </span>
-                        </td>
-                      </tr>
+                        </span>
+                        <span className="block text-base font-bold mt-1 leading-snug">{node.name}</span>
+                        <span className="block text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                          Bau: {interpretGas(node.gasPpmMQ135)} • {node.lastTelemetry}
+                        </span>
+                      </button>
                     );
                   })}
-                </tbody>
-              </table>
+                  {filteredNodes.length === 0 && (
+                    <p className="text-base text-center py-8" style={{ color: 'var(--text-secondary)' }}>
+                      Tidak ada TPS yang cocok dengan pencarian.
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              {/* Peta */}
+              <div className="lg:col-span-6 lg:h-[640px] h-[480px]">
+                <InteractiveMap
+                  nodes={nodes}
+                  cvrp={cvrp}
+                  selectedNode={selectedNode}
+                  onSelectNode={(node) => setSelectedNode(node)}
+                  showRoute={showRoute}
+                  theme={theme}
+                />
+                <label
+                  className="flex items-center gap-3 mt-3 px-4 min-h-[48px] rounded-lg border text-base font-semibold cursor-pointer card"
+                >
+                  <input
+                    type="checkbox"
+                    checked={showRoute}
+                    onChange={(e) => setShowRoute(e.target.checked)}
+                    className="w-6 h-6 accent-blue-700"
+                  />
+                  Tampilkan rute armada di peta
+                </label>
+              </div>
+
+              {/* Detail TPS + Peringatan */}
+              <div className="lg:col-span-3 flex flex-col gap-4 lg:h-[640px] lg:overflow-y-auto">
+                <section aria-label="TPS yang dipilih" className="card p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-base font-extrabold">TPS yang dipilih</h2>
+                    {selectedNode && (
+                      <span
+                        className="text-sm font-extrabold px-3 py-1.5 rounded-full border flex items-center gap-1.5"
+                        style={statusStyle(getStatus(selectedNode).level, theme)}
+                      >
+                        {getStatus(selectedNode).level === 'critical' ? (
+                          <AlertTriangle className="w-4 h-4" aria-hidden />
+                        ) : getStatus(selectedNode).level === 'warning' ? (
+                          <AlertCircle className="w-4 h-4" aria-hidden />
+                        ) : (
+                          <CheckCircle2 className="w-4 h-4" aria-hidden />
+                        )}
+                        {getStatus(selectedNode).level === 'critical'
+                          ? 'Penuh'
+                          : getStatus(selectedNode).level === 'warning'
+                            ? 'Hampir penuh'
+                            : 'Aman'}
+                      </span>
+                    )}
+                  </div>
+                  {selectedNode ? (
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="font-bold text-lg leading-snug">{selectedNode.name}</h3>
+                        <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                          {selectedNode.address}
+                        </p>
+                      </div>
+                      <div className="card-inset p-4 space-y-2">
+                        <div className="flex justify-between items-baseline text-base">
+                          <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                            Sampah
+                          </span>
+                          <span className="font-extrabold text-2xl tabular-nums">
+                            {selectedNode.currentVolumePercent}%
+                          </span>
+                        </div>
+                        <div
+                          role="progressbar"
+                          aria-valuenow={selectedNode.currentVolumePercent}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`Sampah ${selectedNode.currentVolumePercent} persen`}
+                          className="w-full h-4 rounded-full overflow-hidden border"
+                          style={{ borderColor: 'var(--border-strong)', backgroundColor: 'var(--bg-primary)' }}
+                        >
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${selectedNode.currentVolumePercent}%`,
+                              backgroundColor:
+                                getStatus(selectedNode).level === 'critical'
+                                  ? 'var(--critical)'
+                                  : getStatus(selectedNode).level === 'warning'
+                                    ? 'var(--warning)'
+                                    : 'var(--success)',
+                            }}
+                          />
+                        </div>
+                        <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                          {getStatus(selectedNode).action}
+                        </p>
+                      </div>
+                      <dl className="grid grid-cols-1 gap-2 text-base">
+                        <div className="card-inset p-3">
+                          <dt className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                            Bau sampah
+                          </dt>
+                          <dd className="font-bold">{interpretGas(selectedNode.gasPpmMQ135)}</dd>
+                        </div>
+                        <div className="card-inset p-3">
+                          <dt className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                            Suhu tempat sampah
+                          </dt>
+                          <dd className="font-bold">{selectedNode.temperatureCelsius} °C</dd>
+                        </div>
+                        <div className="card-inset p-3">
+                          <dt className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                            Baterai alat
+                          </dt>
+                          <dd className="font-bold">{interpretBattery(selectedNode.batteryVoltage)}</dd>
+                        </div>
+                      </dl>
+                      <button
+                        onClick={() => setActiveTab('dispatch')}
+                        className="w-full min-h-[56px] rounded-lg text-base font-extrabold flex items-center justify-center gap-2 text-white"
+                        style={{ backgroundColor: 'var(--info)' }}
+                      >
+                        <Send className="w-5 h-5" aria-hidden />
+                        Kirim Armada ke TPS ini
+                      </button>
+                      <p className="text-sm text-center" style={{ color: 'var(--text-secondary)' }}>
+                        Data diperbarui: {selectedNode.lastTelemetry} • Alat menyala
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-base py-8 text-center" style={{ color: 'var(--text-secondary)' }}>
+                      Pilih salah satu TPS di daftar atau peta.
+                    </p>
+                  )}
+                </section>
+
+                {/* Peringatan yang bisa diklik */}
+                <section aria-label="Perlu perhatian" className="card p-4 space-y-2.5">
+                  <h2 className="text-base font-extrabold flex items-center gap-2" style={{ color: 'var(--critical)' }}>
+                    <AlertTriangle className="w-5 h-5" aria-hidden />
+                    Perlu Perhatian ({criticalNodes.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {criticalNodes.slice(0, 4).map((n) => (
+                      <button
+                        key={n.id}
+                        onClick={() => setSelectedNode(n)}
+                        className="w-full text-left card-inset p-3 min-h-[64px] hover:opacity-90 transition-opacity"
+                      >
+                        <span className="flex justify-between gap-2 text-base">
+                          <strong>{n.name}</strong>
+                          <strong className="tabular-nums" style={{ color: 'var(--critical)' }}>
+                            {n.currentVolumePercent}%
+                          </strong>
+                        </span>
+                        <span className="block text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                          {interpretGas(n.gasPpmMQ135)} • Ketuk untuk melihat
+                        </span>
+                      </button>
+                    ))}
+                    {criticalNodes.length === 0 && (
+                      <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+                        Semua TPS dalam kondisi aman. Kerja yang bagus!
+                      </p>
+                    )}
+                  </div>
+                </section>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ================= TAB 4: TELEMETRY INSPECTION ================= */}
-        {activeTab === 'telemetry' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            
-            {/* Distance / JSN-SR04T */}
-            <div className="bg-[#11161D] border border-[#202832] rounded-[8px] p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-[#202832] pb-2">
-                <span className="font-mono text-xs text-[#9AA6B2]">DISTANCE SENSOR</span>
-                <span className="font-mono text-[10px] text-blue-400">JSN-SR04T IP67</span>
+          {/* ---- LANGKAH 2: Kirim Armada ---- */}
+          {activeTab === 'dispatch' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <section aria-label="Armada pengangkut" className="lg:col-span-5 card p-5 space-y-4">
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                    Langkah 2 — Pengiriman armada
+                  </p>
+                  <h2 className="font-extrabold text-xl mt-0.5">{cvrp.truckId}</h2>
+                  <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+                    Supir: {cvrp.truckDriver}
+                  </p>
+                </div>
+                <div className="card-inset p-4 space-y-2">
+                  <div className="flex justify-between text-base">
+                    <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                      Muatan truk
+                    </span>
+                    <strong className="tabular-nums">
+                      {cvrp.assignedLoadLiters} / {cvrp.truckCapacityLiters} liter
+                    </strong>
+                  </div>
+                  <div
+                    role="progressbar"
+                    aria-valuenow={utilization}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Muatan truk ${utilization} persen`}
+                    className="w-full h-4 rounded-full overflow-hidden border"
+                    style={{ borderColor: 'var(--border-strong)', backgroundColor: 'var(--bg-primary)' }}
+                  >
+                    <div className="h-full rounded-full" style={{ width: `${utilization}%`, backgroundColor: 'var(--info)' }} />
+                  </div>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    Terisi {utilization}% — masih cukup untuk {criticalNodes.length} TPS prioritas
+                  </p>
+                </div>
+                <dl className="grid grid-cols-3 gap-2 text-center">
+                  <div className="card-inset p-3">
+                    <dt className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                      Jarak tempuh
+                    </dt>
+                    <dd className="text-lg font-extrabold tabular-nums">{cvrp.totalDistanceKm} km</dd>
+                  </div>
+                  <div className="card-inset p-3">
+                    <dt className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                      Jarak hemat
+                    </dt>
+                    <dd className="text-lg font-extrabold tabular-nums" style={{ color: 'var(--success)' }}>
+                      {cvrp.distanceSavedKm} km
+                    </dd>
+                  </div>
+                  <div className="card-inset p-3">
+                    <dt className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                      BBM hemat
+                    </dt>
+                    <dd className="text-lg font-extrabold tabular-nums" style={{ color: 'var(--warning)' }}>
+                      {cvrp.fuelSavedLiters} L
+                    </dd>
+                  </div>
+                </dl>
+                <button
+                  onClick={handleSendDispatch}
+                  className="w-full min-h-[60px] rounded-xl text-lg font-extrabold flex items-center justify-center gap-2 text-white"
+                  style={{ backgroundColor: 'var(--success)' }}
+                >
+                  <Navigation className="w-6 h-6" aria-hidden />
+                  {dispatchSent ? '✓ Rute Terkirim ke Supir!' : 'Kirim Rute ke Supir'}
+                </button>
+                {dispatchSent && (
+                  <p role="status" className="text-base font-bold text-center" style={{ color: 'var(--success)' }}>
+                    Rute {cvrp.routeId} sudah diteruskan ke {cvrp.truckDriver}.
+                  </p>
+                )}
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Rute otomatis melewati TPS yang penuh terlebih dahulu, lalu berakhir di TPSA Banyuurip.
+                </p>
+              </section>
+
+              <section aria-label="Urutan pemberhentian" className="lg:col-span-7 card p-5 space-y-3">
+                <h2 className="text-base font-extrabold">Urutan Pemberhentian Armada</h2>
+                <ol className="space-y-2">
+                  {cvrp.waypoints.map((wp) => (
+                    <li
+                      key={wp.step}
+                      className="card-inset p-3.5 flex items-center justify-between gap-3"
+                    >
+                      <span className="flex items-center gap-3">
+                        <span
+                          aria-hidden
+                          className="flex items-center justify-center w-9 h-9 rounded-lg text-base font-extrabold border shrink-0"
+                          style={{ borderColor: 'var(--border-strong)' }}
+                        >
+                          {wp.step}
+                        </span>
+                        <span>
+                          <span className="block font-bold text-base leading-snug">{wp.title}</span>
+                          <span className="block text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            {wp.pickupVolumeLiters > 0 ? `Angkut ${wp.pickupVolumeLiters} liter • ` : ''}
+                            Tiba sekitar {wp.estimatedArrival}
+                          </span>
+                        </span>
+                      </span>
+                      <span
+                        className="text-sm font-extrabold px-3 py-1.5 rounded-full border shrink-0"
+                        style={
+                          wp.status === 'Selesai'
+                            ? statusStyle('optimal', theme)
+                            : wp.status === 'Menuju Lokasi'
+                              ? { backgroundColor: '#dbeafe', color: '#1d4ed8', border: '2px solid #1d4ed8' }
+                              : { borderColor: 'var(--border-strong)', color: 'var(--text-secondary)' }
+                        }
+                      >
+                        {wp.status === 'Selesai' ? '✓ Selesai' : wp.status === 'Menuju Lokasi' ? '→ Sedang jalan' : 'Menunggu'}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            </div>
+          )}
+
+          {/* ---- LANGKAH 3: Daftar TPS ---- */}
+          {activeTab === 'tps' && (
+            <section aria-label="Semua titik TPS" className="card p-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                    Langkah 3 — Inventaris
+                  </p>
+                  <h2 className="font-extrabold text-xl">Semua Titik TPS Kota Magelang</h2>
+                </div>
+                <span className="text-base font-bold px-4 py-2 rounded-lg border" style={{ borderColor: 'var(--border-strong)' }}>
+                  Total: {nodes.length} TPS
+                </span>
               </div>
-              <div className="font-mono space-y-1">
-                <span className="text-[11px] text-[#667381]">Active Measurement</span>
-                <p className="text-2xl font-bold text-[#E6EDF3]">{selectedNode?.measuredDistanceCm ?? '--'} <span className="text-sm font-normal text-[#9AA6B2]">cm</span></p>
-                <p className="text-[11px] text-[#22C55E]">Blind Zone Verification: PASS (&gt;20cm)</p>
+              <div className="overflow-x-auto -mx-1 px-1">
+                <table className="w-full text-left text-base min-w-[760px]">
+                  <thead>
+                    <tr className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      <th scope="col" className="pb-3 pr-3 font-bold">TPS</th>
+                      <th scope="col" className="pb-3 pr-3 font-bold">Sampah</th>
+                      <th scope="col" className="pb-3 pr-3 font-bold">Bau</th>
+                      <th scope="col" className="pb-3 pr-3 font-bold">Alat</th>
+                      <th scope="col" className="pb-3 font-bold">Kondisi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {nodes.map((n) => {
+                      const st = getStatus(n);
+                      return (
+                        <tr key={n.id} className="border-t" style={{ borderColor: 'var(--border)' }}>
+                          <td className="py-3 pr-3">
+                            <p className="font-bold leading-snug">{n.name}</p>
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{n.address}</p>
+                          </td>
+                          <td className="py-3 pr-3">
+                            <strong className="text-lg tabular-nums">{n.currentVolumePercent}%</strong>
+                          </td>
+                          <td className="py-3 pr-3 text-sm font-semibold">{interpretGas(n.gasPpmMQ135)}</td>
+                          <td className="py-3 pr-3 text-sm font-semibold">{interpretBattery(n.batteryVoltage)}</td>
+                          <td className="py-3">
+                            <span
+                              className="inline-flex items-center gap-1.5 text-sm font-extrabold px-3 py-1.5 rounded-full border"
+                              style={statusStyle(st.level, theme)}
+                            >
+                              {st.level === 'critical' ? (
+                                <AlertTriangle className="w-4 h-4" aria-hidden />
+                              ) : st.level === 'warning' ? (
+                                <AlertCircle className="w-4 h-4" aria-hidden />
+                              ) : (
+                                <CheckCircle2 className="w-4 h-4" aria-hidden />
+                              )}
+                              {st.level === 'critical' ? 'Segera angkut' : st.level === 'warning' ? 'Pantau' : 'Aman'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {/* ---- LANGKAH 4: Data Sensor (P2: bahasa awam + detail teknis) ---- */}
+          {activeTab === 'telemetry' && (
+            <div className="space-y-4">
+              <div className="card p-5">
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                  Langkah 4 — Pantau alat
+                </p>
+                <h2 className="font-extrabold text-xl">
+                  Kondisi Alat di {selectedNode?.name ?? '—'}
+                </h2>
+                <p className="text-base mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  Penjelasan dibuat sederhana. Kode alat (mis. MQ-135) disembunyikan di “Detail teknis”.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <section aria-label="Isi sampah" className="card p-5 space-y-2">
+                  <h3 className="text-base font-extrabold">Isi Sampah</h3>
+                  <p className="text-3xl font-extrabold tabular-nums">
+                    {selectedNode?.currentVolumePercent ?? '—'}%
+                    <span className="text-base font-semibold" style={{ color: 'var(--text-secondary)' }}> penuh</span>
+                  </p>
+                  <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+                    {selectedNode && selectedNode.currentVolumePercent >= 80
+                      ? 'Sudah penuh — masuk prioritas pengangkutan.'
+                      : selectedNode && selectedNode.currentVolumePercent >= 50
+                        ? 'Setengah lebih — pantau 1–2 jam ke depan.'
+                        : 'Masih lega — belum perlu diangkut.'}
+                  </p>
+                  <details className="text-sm card-inset p-3">
+                    <summary className="font-bold cursor-pointer min-h-[44px] flex items-center">
+                      Detail teknis (untuk teknisi)
+                    </summary>
+                    <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
+                      Sensor jarak JSN-SR04T: {selectedNode?.measuredDistanceCm} cm • Tinggi bak{' '}
+                      {selectedNode?.totalHeightCm} cm • Batas buta {selectedNode?.blindZoneCm} cm.
+                    </p>
+                  </details>
+                </section>
+                <section aria-label="Bau dan gas" className="card p-5 space-y-2">
+                  <h3 className="text-base font-extrabold">Bau & Gas</h3>
+                  <p className="text-xl font-extrabold">{selectedNode ? interpretGas(selectedNode.gasPpmMQ135) : '—'}</p>
+                  <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+                    Gas metana: {selectedNode ? interpretMethane(selectedNode.methanePpmMQ4) : '—'}
+                  </p>
+                  <details className="text-sm card-inset p-3">
+                    <summary className="font-bold cursor-pointer min-h-[44px] flex items-center">
+                      Detail teknis (untuk teknisi)
+                    </summary>
+                    <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
+                      MQ-135 (NH₃): {selectedNode?.gasPpmMQ135} ppm • MQ-4 (CH₄): {selectedNode?.methanePpmMQ4} ppm.
+                    </p>
+                  </details>
+                </section>
+                <section aria-label="Suhu dan kelembapan" className="card p-5 space-y-2">
+                  <h3 className="text-base font-extrabold">Suhu & Kelembapan</h3>
+                  <p className="text-3xl font-extrabold tabular-nums">
+                    {selectedNode?.temperatureCelsius ?? '—'}<span className="text-lg"> °C</span>
+                  </p>
+                  <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+                    Kelembapan {selectedNode?.humidityPercent ?? '—'}% —{' '}
+                    {selectedNode && selectedNode.temperatureCelsius > 31
+                      ? 'agak panas, wajar di siang hari.'
+                      : 'normal.'}
+                  </p>
+                  <details className="text-sm card-inset p-3">
+                    <summary className="font-bold cursor-pointer min-h-[44px] flex items-center">
+                      Detail teknis (untuk teknisi)
+                    </summary>
+                    <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
+                      Sensor DHT22 — suhu {selectedNode?.temperatureCelsius} °C, kelembapan {selectedNode?.humidityPercent}%.
+                    </p>
+                  </details>
+                </section>
+                <section aria-label="Baterai dan panel surya" className="card p-5 space-y-2">
+                  <h3 className="text-base font-extrabold">Baterai & Panel Surya</h3>
+                  <p className="text-xl font-extrabold">
+                    {selectedNode ? interpretBattery(selectedNode.batteryVoltage) : '—'}
+                  </p>
+                  <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+                    {selectedNode?.solarStatus === 'Charging (Terik)'
+                      ? 'Panel surya sedang mengisi (cuaca cerah).'
+                      : selectedNode?.solarStatus === 'Standby (Mendung)'
+                        ? 'Panel surya siaga (cuaca mendung).'
+                        : 'Mode malam — memakai baterai.'}
+                  </p>
+                  <details className="text-sm card-inset p-3">
+                    <summary className="font-bold cursor-pointer min-h-[44px] flex items-center">
+                      Detail teknis (untuk teknisi)
+                    </summary>
+                    <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
+                      Baterai 18650: {selectedNode?.batteryVoltage} V ({selectedNode?.batteryPercent}%) • Modul CN3065:{' '}
+                      {selectedNode?.solarCurrentMa} mA.
+                    </p>
+                  </details>
+                </section>
+              </div>
+              <div className="card p-4 flex flex-wrap items-center gap-3">
+                <label htmlFor="telemetry-tps" className="text-base font-bold">
+                  Lihat alat di TPS lain:
+                </label>
+                <select
+                  id="telemetry-tps"
+                  value={selectedNode?.id ?? ''}
+                  onChange={(e) => {
+                    const found = nodes.find((n) => n.id === e.target.value);
+                    if (found) setSelectedNode(found);
+                  }}
+                  className="min-h-[48px] text-base font-semibold rounded-lg border px-3"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderColor: 'var(--border-strong)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {nodes.map((n) => (
+                    <option key={n.id} value={n.id}>
+                      {n.name} — {n.currentVolumePercent}%
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setActiveTab('map')}
+                  className="flex items-center gap-2 min-h-[48px] px-4 rounded-lg text-base font-bold border"
+                  style={{ borderColor: 'var(--border-strong)' }}
+                >
+                  <Eye className="w-5 h-5" aria-hidden /> Kembali ke Peta
+                  <ChevronRight className="w-5 h-5" aria-hidden />
+                </button>
               </div>
             </div>
+          )}
+        </main>
 
-            {/* Gas / MQ-135 & MQ-4 */}
-            <div className="bg-[#11161D] border border-[#202832] rounded-[8px] p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-[#202832] pb-2">
-                <span className="font-mono text-xs text-[#9AA6B2]">GAS EMISSION</span>
-                <span className="font-mono text-[10px] text-amber-400">MQ-135 / MQ-4</span>
-              </div>
-              <div className="font-mono space-y-2">
-                <div>
-                  <span className="text-[11px] text-[#667381]">NH₃ (Amonia / Bau)</span>
-                  <p className="text-xl font-bold text-[#F59E0B]">{selectedNode?.gasPpmMQ135 ?? '--'} <span className="text-xs text-[#9AA6B2]">ppm</span></p>
-                </div>
-                <div>
-                  <span className="text-[11px] text-[#667381]">CH₄ (Metana)</span>
-                  <p className="text-lg font-bold text-[#E6EDF3]">{selectedNode?.methanePpmMQ4 ?? '--'} <span className="text-xs text-[#9AA6B2]">ppm</span></p>
-                </div>
-              </div>
-            </div>
-
-            {/* Environment / DHT22 */}
-            <div className="bg-[#11161D] border border-[#202832] rounded-[8px] p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-[#202832] pb-2">
-                <span className="font-mono text-xs text-[#9AA6B2]">ENVIRONMENT</span>
-                <span className="font-mono text-[10px] text-emerald-400">DHT22</span>
-              </div>
-              <div className="font-mono space-y-2">
-                <div>
-                  <span className="text-[11px] text-[#667381]">Temperature</span>
-                  <p className="text-xl font-bold text-[#E6EDF3]">{selectedNode?.temperatureCelsius ?? '--'} <span className="text-xs text-[#9AA6B2]">°C</span></p>
-                </div>
-                <div>
-                  <span className="text-[11px] text-[#667381]">Humidity</span>
-                  <p className="text-lg font-bold text-[#E6EDF3]">{selectedNode?.humidityPercent ?? '--'} <span className="text-xs text-[#9AA6B2]">%</span></p>
-                </div>
-              </div>
-            </div>
-
-            {/* Power / CN3065 & 18650 */}
-            <div className="bg-[#11161D] border border-[#202832] rounded-[8px] p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-[#202832] pb-2">
-                <span className="font-mono text-xs text-[#9AA6B2]">POWER SYSTEM</span>
-                <span className="font-mono text-[10px] text-emerald-400">CN3065 / 18650</span>
-              </div>
-              <div className="font-mono space-y-2">
-                <div>
-                  <span className="text-[11px] text-[#667381]">Battery Voltage</span>
-                  <p className="text-xl font-bold text-[#22C55E]">{selectedNode?.batteryVoltage ?? '--'} <span className="text-xs text-[#9AA6B2]">V ({selectedNode?.batteryPercent}%)</span></p>
-                </div>
-                <div>
-                  <span className="text-[11px] text-[#667381]">Solar Current</span>
-                  <p className="text-lg font-bold text-[#F59E0B]">{selectedNode?.solarCurrentMa ?? '--'} <span className="text-xs text-[#9AA6B2]">mA</span></p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-      </main>
-
-      {/* FOOTER */}
-      <footer className="border-t border-[#202832] bg-[#11161D] py-3 px-4 text-center font-mono text-[11px] text-[#667381]">
-        MAGELANG WASTE OPERATIONS CENTER (MWOC) — INDUSTRIAL GEOSPATIAL OPERATIONS SYSTEM
-      </footer>
+        <footer
+          className="border-t py-4 px-4 text-center text-sm"
+          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+        >
+          SUGENG — Sistem Cerdas Angkut Sampah Kota Magelang • Dinas Lingkungan Hidup • Data diperbarui otomatis
+        </footer>
+      </div>
     </div>
   );
 };
+
+export default SugengDashboard;
