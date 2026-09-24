@@ -17,10 +17,19 @@ function statusOf(node: TPSNode): 'critical' | 'warning' | 'optimal' {
   return 'optimal';
 }
 
+// API key CARTO Basemaps (paket raster) via env — menghilangkan watermark "API key required".
+// Astro: variabel diawali PUBLIC_ otomatis tersedia di client via import.meta.env.
+const CARTO_API_KEY = import.meta.env.PUBLIC_CARTO_KEY as string | undefined;
+
+function tileUrl(style: 'voyager' | 'dark_all'): string {
+  const base = `https://{s}.basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}{r}.png`;
+  return CARTO_API_KEY ? `${base}?key=${CARTO_API_KEY}` : base;
+}
+
 const TILE_URL: Record<Props['theme'], string> = {
   // P1: mode terang memakai basemap terang agar terbaca di siang hari/outdoor
-  light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-  dark: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png',
+  light: tileUrl('voyager'),
+  dark: tileUrl('dark_all'),
 };
 
 export const InteractiveMap: React.FC<Props> = ({
