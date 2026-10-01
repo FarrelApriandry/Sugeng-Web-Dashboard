@@ -56,15 +56,15 @@ function interpretBattery(volt: number): string {
 function statusStyle(level: StatusLevel, theme: Theme): React.CSSProperties {
   if (level === 'critical')
     return theme === 'light'
-      ? { backgroundColor: '#fee2e2', color: '#b91c1c', border: '2px solid #b91c1c' }
-      : { backgroundColor: 'rgba(239,68,68,.15)', color: '#f87171', border: '2px solid #f87171' };
+      ? { backgroundColor: '#FBE3E1', color: '#C1272D', border: '2px solid #C1272D' }
+      : { backgroundColor: 'rgba(193,39,45,.22)', color: '#FF7A7A', border: '2px solid #FF7A7A' };
   if (level === 'warning')
     return theme === 'light'
-      ? { backgroundColor: '#fef3c7', color: '#92400e', border: '2px solid #92400e' }
-      : { backgroundColor: 'rgba(245,158,11,.15)', color: '#fbbf24', border: '2px solid #fbbf24' };
+      ? { backgroundColor: '#FDF0D5', color: '#B45309', border: '2px solid #B45309' }
+      : { backgroundColor: 'rgba(255,184,0,.16)', color: '#FFB800', border: '2px solid #FFB800' };
   return theme === 'light'
-    ? { backgroundColor: '#dcfce7', color: '#166534', border: '2px solid #166534' }
-    : { backgroundColor: 'rgba(34,197,94,.15)', color: '#4ade80', border: '2px solid #4ade80' };
+    ? { backgroundColor: '#DFF5E6', color: '#0E7A3D', border: '2px solid #0E7A3D' }
+    : { backgroundColor: 'rgba(14,122,61,.28)', color: '#32D583', border: '2px solid #32D583' };
 }
 
 const FILTER_LABEL: Record<'all' | StatusLevel, string> = {
@@ -149,20 +149,29 @@ export const SugengDashboard: React.FC = () => {
       style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', minHeight: '100vh' }}
     >
       <div className="flex flex-col min-h-screen font-sans">
-        {/* ===== HEADER (P0: Bahasa Indonesia, tombol ≥44px) ===== */}
+        {/* ===== HEADER PAPAN OPERASI (Ruang Kontrol Bersih) ===== */}
         <header
           className="sticky top-0 z-50 border-b px-4 lg:px-6 py-3"
-          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-strong)', borderBottomWidth: 2 }}
         >
           <div className="max-w-[1600px] mx-auto flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h1 className="font-bold text-lg leading-snug">
-                  SUGENG <span style={{ color: 'var(--text-muted)' }}>•</span> Pusat Operasi Sampah Magelang
-                </h1>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  Pantau TPS & kirim armada — Dinas Lingkungan Hidup Kota Magelang
-                </p>
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden
+                  className="flex items-center justify-center w-12 h-12 rounded-[10px] font-display text-white text-xl"
+                  style={{ backgroundColor: 'var(--dlh)', border: '2px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)' }}
+                >
+                  S
+                </span>
+                <div>
+                  <h1 className="font-display font-black text-xl leading-none tracking-tight">
+                    SUGENG <span className="font-mono font-bold text-xs align-middle px-2 py-0.5 rounded-full border" style={{ borderColor: 'var(--border-strong)', color: 'var(--text-secondary)' }}>DLH MAGELANG</span>
+                  </h1>
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                    Pusat Operasi Sampah — pantau TPS & kirim armada
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -203,24 +212,25 @@ export const SugengDashboard: React.FC = () => {
                     key={t.id}
                     onClick={() => setActiveTab(t.id)}
                     aria-current={active ? 'page' : undefined}
-                    className="flex items-center gap-2 px-4 min-h-[48px] rounded-lg text-base font-bold border transition-all"
+                    className="flex items-center gap-2 px-4 min-h-[48px] rounded-[10px] text-base font-bold border transition-all lift"
                     style={
                       active
-                        ? { backgroundColor: 'var(--text-primary)', color: 'var(--bg-secondary)', borderColor: 'var(--text-primary)' }
+                        ? { backgroundColor: 'var(--text-primary)', color: 'var(--bg-secondary)', borderColor: 'var(--text-primary)', boxShadow: 'var(--hard-shadow)' }
                         : {
-                            backgroundColor: 'var(--bg-tertiary)',
+                            backgroundColor: 'var(--bg-secondary)',
                             color: 'var(--text-secondary)',
-                            borderColor: 'var(--border)',
+                            borderColor: 'var(--border-strong)',
+                            borderWidth: 1.5,
                           }
                     }
                   >
                     <span
                       aria-hidden
-                      className="flex items-center justify-center w-7 h-7 rounded-full text-sm font-extrabold border"
+                      className="step-num flex items-center justify-center w-7 h-7 rounded-md text-sm border"
                       style={
                         active
                           ? { borderColor: 'currentColor' }
-                          : { borderColor: 'var(--border-strong)' }
+                          : { borderColor: 'var(--border)', backgroundColor: 'var(--bg-tertiary)' }
                       }
                     >
                       {t.step}
@@ -236,23 +246,23 @@ export const SugengDashboard: React.FC = () => {
             <div
               role="status"
               aria-live="polite"
-              className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 rounded-lg text-sm font-semibold border"
-              style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border)' }}
+              className="reveal flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-2.5 rounded-[10px] text-sm font-semibold"
+              style={{ backgroundColor: 'var(--bg-secondary)', border: '1.5px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)', ['--d' as string]: '60ms' }}
             >
-              <span className="flex items-center gap-2" style={{ color: 'var(--success)' }}>
+              <span className="flex items-center gap-2 font-display font-bold tracking-tight" style={{ color: 'var(--success)' }}>
                 <span aria-hidden className="w-2.5 h-2.5 rounded-full bg-current animate-pulse" />
-                Data langsung
+                LANGSUNG
               </span>
-              <span>{nodes.length} TPS dipantau</span>
+              <span className="tabular-nums">{nodes.length} TPS dipantau</span>
               <span style={statusStyle('critical', theme)} className="px-3 py-1 rounded-full text-sm font-extrabold">
-                ⚠ {criticalNodes.length} TPS penuh — segera angkut
+                {criticalNodes.length} TPS penuh — segera angkut
               </span>
               {warningNodes.length > 0 && (
                 <span style={statusStyle('warning', theme)} className="px-3 py-1 rounded-full text-sm font-extrabold">
                   {warningNodes.length} hampir penuh
                 </span>
               )}
-              <span className="ml-auto tabular-nums">{currentTime}</span>
+              <span className="ml-auto tabular-nums font-mono text-sm">{currentTime}</span>
             </div>
           </div>
         </header>
@@ -265,12 +275,13 @@ export const SugengDashboard: React.FC = () => {
               {/* Daftar TPS */}
               <section
                 aria-label="Daftar TPS"
-                className="lg:col-span-3 card p-4 flex flex-col gap-3 lg:h-[640px]"
+                className="reveal lg:col-span-3 card p-4 flex flex-col gap-3 lg:h-[640px]"
+                style={{ ['--d' as string]: '120ms' }}
               >
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-extrabold">Daftar TPS</h2>
+                  <h2 className="font-display text-base font-extrabold tracking-tight">DAFTAR TPS</h2>
                   <span
-                    className="text-sm font-bold px-3 py-1 rounded-full border"
+                    className="font-mono text-xs font-bold px-3 py-1 rounded-full border"
                     style={{ borderColor: 'var(--border-strong)' }}
                   >
                     {filteredNodes.length} lokasi
@@ -310,21 +321,26 @@ export const SugengDashboard: React.FC = () => {
                   ))}
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                  {filteredNodes.map((node) => {
+                  {filteredNodes.map((node, i) => {
                     const st = getStatus(node);
                     const isSelected = selectedNode?.id === node.id;
+                    const spineCls = st.level === 'critical' ? 'spine-critical' : st.level === 'warning' ? 'spine-warning' : 'spine-optimal';
                     return (
                       <button
                         key={node.id}
                         onClick={() => setSelectedNode(node)}
                         aria-pressed={isSelected}
                         aria-label={`${node.name}, sampah ${node.currentVolumePercent} persen, ${st.label}`}
-                        className="w-full text-left p-3 rounded-lg border transition-all min-h-[64px]"
-                        style={
-                          isSelected
-                            ? { borderColor: 'var(--info)', borderWidth: 3, backgroundColor: 'var(--bg-tertiary)' }
-                            : { borderColor: 'var(--border)', backgroundColor: 'var(--bg-tertiary)' }
-                        }
+                        className={`reveal lift spine ${spineCls} w-full text-left pl-4 pr-3 py-3 rounded-[10px] border transition-all min-h-[64px]`}
+                        style={{
+                          ['--d' as string]: `${140 + Math.min(i, 8) * 40}ms`,
+                          borderColor: 'var(--border-strong)',
+                          borderWidth: 1.5,
+                          backgroundColor: isSelected ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                          boxShadow: isSelected ? 'var(--hard-shadow)' : 'none',
+                          outline: isSelected ? '2px solid var(--text-primary)' : 'none',
+                          outlineOffset: -2,
+                        }}
                       >
                         <span className="flex items-center gap-2">
                           {st.level === 'critical' ? (
@@ -334,9 +350,9 @@ export const SugengDashboard: React.FC = () => {
                           ) : (
                             <CheckCircle2 className="w-6 h-6 shrink-0" style={{ color: 'var(--success)' }} aria-hidden />
                           )}
-                          <span className="text-xl font-extrabold tabular-nums">{node.currentVolumePercent}%</span>
+                          <span className="font-display text-2xl font-black tabular-nums tracking-tight">{node.currentVolumePercent}%</span>
                           <span
-                            className="ml-auto text-sm font-extrabold px-2.5 py-1 rounded-full border"
+                            className="ml-auto text-xs font-extrabold px-2.5 py-1 rounded-full border"
                             style={statusStyle(st.level, theme)}
                           >
                             {st.level === 'critical' ? 'PENUH' : st.level === 'warning' ? 'HAMPIR' : 'AMAN'}
@@ -368,13 +384,14 @@ export const SugengDashboard: React.FC = () => {
                   theme={theme}
                 />
                 <label
-                  className="flex items-center gap-3 mt-3 px-4 min-h-[48px] rounded-lg border text-base font-semibold cursor-pointer card"
+                  className="lift flex items-center gap-3 mt-3 px-4 min-h-[48px] rounded-[10px] border text-base font-semibold cursor-pointer card"
                 >
                   <input
                     type="checkbox"
                     checked={showRoute}
                     onChange={(e) => setShowRoute(e.target.checked)}
-                    className="w-6 h-6 accent-blue-700"
+                    className="w-6 h-6"
+                    style={{ accentColor: 'var(--safety)' }}
                   />
                   Tampilkan rute armada di peta
                 </label>
@@ -382,9 +399,9 @@ export const SugengDashboard: React.FC = () => {
 
               {/* Detail TPS + Peringatan */}
               <div className="lg:col-span-3 flex flex-col gap-4 lg:h-[640px] lg:overflow-y-auto">
-                <section aria-label="TPS yang dipilih" className="card p-4 space-y-3">
+                <section aria-label="TPS yang dipilih" className="reveal card p-4 space-y-3" style={{ ['--d' as string]: '160ms' }}>
                   <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-base font-extrabold">TPS yang dipilih</h2>
+                    <h2 className="font-display text-base font-extrabold tracking-tight">TPS YANG DIPILIH</h2>
                     {selectedNode && (
                       <span
                         className="text-sm font-extrabold px-3 py-1.5 rounded-full border flex items-center gap-1.5"
@@ -418,7 +435,7 @@ export const SugengDashboard: React.FC = () => {
                           <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
                             Sampah
                           </span>
-                          <span className="font-extrabold text-2xl tabular-nums">
+                          <span className="font-display font-black text-3xl tabular-nums tracking-tight">
                             {selectedNode.currentVolumePercent}%
                           </span>
                         </div>
@@ -470,8 +487,8 @@ export const SugengDashboard: React.FC = () => {
                       </dl>
                       <button
                         onClick={() => setActiveTab('dispatch')}
-                        className="w-full min-h-[56px] rounded-lg text-base font-extrabold flex items-center justify-center gap-2 text-white"
-                        style={{ backgroundColor: 'var(--info)' }}
+                        className="lift w-full min-h-[56px] rounded-[10px] text-base font-display font-extrabold tracking-tight flex items-center justify-center gap-2 text-white"
+                        style={{ backgroundColor: 'var(--safety)', border: '1.5px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)' }}
                       >
                         <Send className="w-5 h-5" aria-hidden />
                         Kirim Armada ke TPS ini
@@ -525,12 +542,12 @@ export const SugengDashboard: React.FC = () => {
           {/* ---- LANGKAH 2: Kirim Armada ---- */}
           {activeTab === 'dispatch' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <section aria-label="Armada pengangkut" className="lg:col-span-5 card p-5 space-y-4">
+              <section aria-label="Armada pengangkut" className="reveal lg:col-span-5 card p-5 space-y-4" style={{ ['--d' as string]: '80ms' }}>
                 <div>
-                  <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                    Langkah 2 — Pengiriman armada
+                  <p className="font-mono text-xs font-bold tracking-widest" style={{ color: 'var(--text-secondary)' }}>
+                    LANGKAH 02 — PENGIRIMAN ARMADA
                   </p>
-                  <h2 className="font-extrabold text-xl mt-0.5">{cvrp.truckId}</h2>
+                  <h2 className="font-display font-black text-2xl mt-1 tracking-tight">{cvrp.truckId}</h2>
                   <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
                     Supir: {cvrp.truckDriver}
                   </p>
@@ -553,7 +570,7 @@ export const SugengDashboard: React.FC = () => {
                     className="w-full h-4 rounded-full overflow-hidden border"
                     style={{ borderColor: 'var(--border-strong)', backgroundColor: 'var(--bg-primary)' }}
                   >
-                    <div className="h-full rounded-full" style={{ width: `${utilization}%`, backgroundColor: 'var(--info)' }} />
+                    <div className="h-full rounded-full" style={{ width: `${utilization}%`, backgroundColor: 'var(--safety)' }} />
                   </div>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                     Terisi {utilization}% — masih cukup untuk {criticalNodes.length} TPS prioritas
@@ -585,11 +602,11 @@ export const SugengDashboard: React.FC = () => {
                 </dl>
                 <button
                   onClick={handleSendDispatch}
-                  className="w-full min-h-[60px] rounded-xl text-lg font-extrabold flex items-center justify-center gap-2 text-white"
-                  style={{ backgroundColor: 'var(--success)' }}
+                  className="lift w-full min-h-[60px] rounded-[10px] text-lg font-display font-extrabold tracking-tight flex items-center justify-center gap-2 text-white"
+                  style={{ backgroundColor: 'var(--safety)', border: '1.5px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)' }}
                 >
                   <Navigation className="w-6 h-6" aria-hidden />
-                  {dispatchSent ? '✓ Rute Terkirim ke Supir!' : 'Kirim Rute ke Supir'}
+                  {dispatchSent ? 'Rute Terkirim ke Supir!' : 'Kirim Rute ke Supir'}
                 </button>
                 {dispatchSent && (
                   <p role="status" className="text-base font-bold text-center" style={{ color: 'var(--success)' }}>
@@ -601,19 +618,20 @@ export const SugengDashboard: React.FC = () => {
                 </p>
               </section>
 
-              <section aria-label="Urutan pemberhentian" className="lg:col-span-7 card p-5 space-y-3">
-                <h2 className="text-base font-extrabold">Urutan Pemberhentian Armada</h2>
+              <section aria-label="Urutan pemberhentian" className="reveal lg:col-span-7 card p-5 space-y-3" style={{ ['--d' as string]: '120ms' }}>
+                <h2 className="font-display text-base font-extrabold tracking-tight">URUTAN PEMBERHENTIAN ARMADA</h2>
                 <ol className="space-y-2">
-                  {cvrp.waypoints.map((wp) => (
+                  {cvrp.waypoints.map((wp, i) => (
                     <li
                       key={wp.step}
-                      className="card-inset p-3.5 flex items-center justify-between gap-3"
+                      className="reveal card-inset p-3.5 flex items-center justify-between gap-3"
+                      style={{ ['--d' as string]: `${140 + Math.min(i, 7) * 40}ms` }}
                     >
                       <span className="flex items-center gap-3">
                         <span
                           aria-hidden
-                          className="flex items-center justify-center w-9 h-9 rounded-lg text-base font-extrabold border shrink-0"
-                          style={{ borderColor: 'var(--border-strong)' }}
+                          className="step-num flex items-center justify-center w-9 h-9 rounded-lg text-base border shrink-0"
+                          style={{ borderColor: 'var(--border-strong)', backgroundColor: 'var(--bg-secondary)' }}
                         >
                           {wp.step}
                         </span>
@@ -631,7 +649,7 @@ export const SugengDashboard: React.FC = () => {
                           wp.status === 'Selesai'
                             ? statusStyle('optimal', theme)
                             : wp.status === 'Menuju Lokasi'
-                              ? { backgroundColor: '#dbeafe', color: '#1d4ed8', border: '2px solid #1d4ed8' }
+                              ? { backgroundColor: '#FDEBD9', color: '#C24E03', border: '2px solid #C24E03' }
                               : { borderColor: 'var(--border-strong)', color: 'var(--text-secondary)' }
                         }
                       >
@@ -646,15 +664,15 @@ export const SugengDashboard: React.FC = () => {
 
           {/* ---- LANGKAH 3: Daftar TPS ---- */}
           {activeTab === 'tps' && (
-            <section aria-label="Semua titik TPS" className="card p-5 space-y-4">
+            <section aria-label="Semua titik TPS" className="reveal card p-5 space-y-4" style={{ ['--d' as string]: '80ms' }}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                    Langkah 3 — Inventaris
+                  <p className="font-mono text-xs font-bold tracking-widest" style={{ color: 'var(--text-secondary)' }}>
+                    LANGKAH 03 — INVENTARIS
                   </p>
-                  <h2 className="font-extrabold text-xl">Semua Titik TPS Kota Magelang</h2>
+                  <h2 className="font-display font-black text-2xl tracking-tight">Semua Titik TPS Kota Magelang</h2>
                 </div>
-                <span className="text-base font-bold px-4 py-2 rounded-lg border" style={{ borderColor: 'var(--border-strong)' }}>
+                <span className="font-mono text-sm font-bold px-4 py-2 rounded-[10px] border" style={{ borderColor: 'var(--border-strong)' }}>
                   Total: {nodes.length} TPS
                 </span>
               </div>
@@ -710,11 +728,11 @@ export const SugengDashboard: React.FC = () => {
           {/* ---- LANGKAH 4: Data Sensor (P2: bahasa awam + detail teknis) ---- */}
           {activeTab === 'telemetry' && (
             <div className="space-y-4">
-              <div className="card p-5">
-                <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                  Langkah 4 — Pantau alat
+              <div className="reveal card p-5" style={{ ['--d' as string]: '80ms' }}>
+                <p className="font-mono text-xs font-bold tracking-widest" style={{ color: 'var(--text-secondary)' }}>
+                  LANGKAH 04 — PANTAU ALAT
                 </p>
-                <h2 className="font-extrabold text-xl">
+                <h2 className="font-display font-black text-2xl tracking-tight">
                   Kondisi Alat di {selectedNode?.name ?? '—'}
                 </h2>
                 <p className="text-base mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -722,11 +740,11 @@ export const SugengDashboard: React.FC = () => {
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <section aria-label="Isi sampah" className="card p-5 space-y-2">
-                  <h3 className="text-base font-extrabold">Isi Sampah</h3>
-                  <p className="text-3xl font-extrabold tabular-nums">
+                <section aria-label="Isi sampah" className="reveal card p-5 space-y-2" style={{ ['--d' as string]: '120ms' }}>
+                  <h3 className="font-display text-base font-extrabold tracking-tight">ISI SAMPAH</h3>
+                  <p className="font-display text-4xl font-black tabular-nums tracking-tight">
                     {selectedNode?.currentVolumePercent ?? '—'}%
-                    <span className="text-base font-semibold" style={{ color: 'var(--text-secondary)' }}> penuh</span>
+                    <span className="text-base font-sans font-semibold" style={{ color: 'var(--text-secondary)' }}> penuh</span>
                   </p>
                   <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
                     {selectedNode && selectedNode.currentVolumePercent >= 80
@@ -745,8 +763,8 @@ export const SugengDashboard: React.FC = () => {
                     </p>
                   </details>
                 </section>
-                <section aria-label="Bau dan gas" className="card p-5 space-y-2">
-                  <h3 className="text-base font-extrabold">Bau & Gas</h3>
+                <section aria-label="Bau dan gas" className="reveal card p-5 space-y-2" style={{ ['--d' as string]: '160ms' }}>
+                  <h3 className="font-display text-base font-extrabold tracking-tight">BAU & GAS</h3>
                   <p className="text-xl font-extrabold">{selectedNode ? interpretGas(selectedNode.gasPpmMQ135) : '—'}</p>
                   <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
                     Gas metana: {selectedNode ? interpretMethane(selectedNode.methanePpmMQ4) : '—'}
@@ -760,10 +778,10 @@ export const SugengDashboard: React.FC = () => {
                     </p>
                   </details>
                 </section>
-                <section aria-label="Suhu dan kelembapan" className="card p-5 space-y-2">
-                  <h3 className="text-base font-extrabold">Suhu & Kelembapan</h3>
-                  <p className="text-3xl font-extrabold tabular-nums">
-                    {selectedNode?.temperatureCelsius ?? '—'}<span className="text-lg"> °C</span>
+                <section aria-label="Suhu dan kelembapan" className="reveal card p-5 space-y-2" style={{ ['--d' as string]: '200ms' }}>
+                  <h3 className="font-display text-base font-extrabold tracking-tight">SUHU & KELEMBAPAN</h3>
+                  <p className="font-display text-4xl font-black tabular-nums tracking-tight">
+                    {selectedNode?.temperatureCelsius ?? '—'}<span className="text-xl"> °C</span>
                   </p>
                   <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
                     Kelembapan {selectedNode?.humidityPercent ?? '—'}% —{' '}
@@ -780,8 +798,8 @@ export const SugengDashboard: React.FC = () => {
                     </p>
                   </details>
                 </section>
-                <section aria-label="Baterai dan panel surya" className="card p-5 space-y-2">
-                  <h3 className="text-base font-extrabold">Baterai & Panel Surya</h3>
+                <section aria-label="Baterai dan panel surya" className="reveal card p-5 space-y-2" style={{ ['--d' as string]: '240ms' }}>
+                  <h3 className="font-display text-base font-extrabold tracking-tight">BATERAI & PANEL SURYA</h3>
                   <p className="text-xl font-extrabold">
                     {selectedNode ? interpretBattery(selectedNode.batteryVoltage) : '—'}
                   </p>
@@ -841,10 +859,10 @@ export const SugengDashboard: React.FC = () => {
         </main>
 
         <footer
-          className="border-t py-4 px-4 text-center text-sm"
-          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+          className="border-t py-4 px-4 text-center text-sm font-semibold"
+          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-strong)', borderTopWidth: 2, color: 'var(--text-secondary)' }}
         >
-          SUGENG — Sistem Cerdas Angkut Sampah Kota Magelang • Dinas Lingkungan Hidup • Data diperbarui otomatis
+          <span className="font-display font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>SUGENG</span> — Sistem Cerdas Angkut Sampah Kota Magelang • Dinas Lingkungan Hidup • Data diperbarui otomatis
         </footer>
       </div>
     </div>

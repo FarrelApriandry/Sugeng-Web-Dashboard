@@ -113,11 +113,11 @@ export const InteractiveMap: React.FC<Props> = ({
         routePolylineRef.current = null;
       }
 
-      // 1. Pool DLH — kotak biru berlabel "DLH" (bukan emoji)
+      // 1. Pool DLH — lencana hijau DLH khas ruang kontrol
       const depotIcon = L.divIcon({
-        className: 'custom-depot',
+        className: 'leaflet-divicon-sugeng',
         html: `
-          <div style="display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:12px;background:#1d4ed8;color:#fff;font-weight:800;font-size:14px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);font-family:Inter,sans-serif;" title="Pool DLH Kota Magelang">
+          <div class="sugeng-marker sugeng-marker-depot" title="Pool DLH Kota Magelang — tempat berangkat armada">
             DLH
           </div>
         `,
@@ -127,15 +127,15 @@ export const InteractiveMap: React.FC<Props> = ({
       const depotMarker = L.marker(POOL_DEPOT.coordinates, { icon: depotIcon, keyboard: true })
         .addTo(map)
         .bindPopup(
-          `<div style="font-size:15px;line-height:1.5;color:#0f172a"><strong>${POOL_DEPOT.name}</strong><br/><span>${POOL_DEPOT.address}</span><br/><span>Tempat berangkat armada</span></div>`
+          `<div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.55;color:#101828;min-width:190px"><p style="margin:0 0 4px;font-family:Archivo,sans-serif;font-weight:800;font-size:15px;letter-spacing:-0.01em">${POOL_DEPOT.name}</p><p style="margin:0;color:#344054">${POOL_DEPOT.address}</p><p style="margin:6px 0 0;display:inline-block;background:#0E7A3D;color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:9999px">Tempat berangkat armada</p></div>`
         );
       markersRef.current['depot'] = depotMarker;
 
-      // 2. TPSA Banyuurip — kotak ungu berlabel "TPA"
+      // 2. TPSA Banyuurip — lencana tinta khas ruang kontrol
       const landfillIcon = L.divIcon({
-        className: 'custom-landfill',
+        className: 'leaflet-divicon-sugeng',
         html: `
-          <div style="display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:12px;background:#7e22ce;color:#fff;font-weight:800;font-size:14px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);font-family:Inter,sans-serif;" title="TPSA Banyuurip">
+          <div class="sugeng-marker sugeng-marker-landfill" title="TPSA Banyuurip — tempat bongkar muatan">
             TPA
           </div>
         `,
@@ -145,26 +145,23 @@ export const InteractiveMap: React.FC<Props> = ({
       const landfillMarker = L.marker(TPSA_BANYUURIP.coordinates, { icon: landfillIcon, keyboard: true })
         .addTo(map)
         .bindPopup(
-          `<div style="font-size:15px;line-height:1.5;color:#0f172a"><strong>${TPSA_BANYUURIP.name}</strong><br/><span>${TPSA_BANYUURIP.address}</span><br/><span>Tempat bongkar muatan</span></div>`
+          `<div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.55;color:#101828;min-width:190px"><p style="margin:0 0 4px;font-family:Archivo,sans-serif;font-weight:800;font-size:15px;letter-spacing:-0.01em">${TPSA_BANYUURIP.name}</p><p style="margin:0;color:#344054">${TPSA_BANYUURIP.address}</p><p style="margin:6px 0 0;display:inline-block;background:#101828;color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:9999px">Tempat bongkar muatan</p></div>`
         );
       markersRef.current['landfill'] = landfillMarker;
 
-      // 3. Marker TPS — lingkaran besar 52px, angka 15px, bentuk + label (tak hanya warna)
+      // 3. Marker TPS — lingkaran stencil 54px, angka display, tanpa emoji
       nodes.forEach((node) => {
         const st = statusOf(node);
-        const bg = st === 'critical' ? '#dc2626' : st === 'warning' ? '#d97706' : '#15803d';
-        const badge = st === 'critical' ? '⚠' : st === 'warning' ? '!' : '✓';
         const label = st === 'critical' ? 'Penuh, segera angkut' : st === 'warning' ? 'Hampir penuh' : 'Aman';
         const isSelected = selectedNode?.id === node.id;
 
         const icon = L.divIcon({
-          className: 'tps-marker',
+          className: 'leaflet-divicon-sugeng',
           html: `
             <div title="${node.name} — ${node.currentVolumePercent}% (${label})" style="position:relative;cursor:pointer;">
-              <div class="${st === 'critical' ? 'critical-pulse' : ''}" style="display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;background:${bg};color:#fff;font-weight:800;font-size:15px;border:${isSelected ? '4px solid #1d4ed8' : '3px solid #fff'};box-shadow:0 2px 8px rgba(0,0,0,.35);font-family:'JetBrains Mono',monospace;">
+              <div class="sugeng-marker sugeng-marker-${st} ${st === 'critical' ? 'critical-pulse' : ''} ${isSelected ? 'sugeng-marker-selected' : ''}" style="width:54px;height:54px;font-size:15px;">
                 ${node.currentVolumePercent}%
               </div>
-              <div style="position:absolute;bottom:-6px;right:-6px;width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid ${bg};color:${bg};font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1;">${badge}</div>
             </div>
           `,
           iconSize: [54, 54],
@@ -174,21 +171,30 @@ export const InteractiveMap: React.FC<Props> = ({
         const marker = L.marker(node.coordinates, { icon, keyboard: true, title: `${node.name} — ${node.currentVolumePercent}% (${label})` })
           .addTo(map)
           .bindPopup(
-            `<div style="font-size:15px;line-height:1.5;color:#0f172a"><strong>${node.name}</strong><br/><span>Sampah ${node.currentVolumePercent}% — ${label}</span><br/><span style="font-size:13px">${node.address}</span></div>`
+            `<div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.55;color:#101828;min-width:200px"><p style="margin:0 0 4px;font-family:Archivo,sans-serif;font-weight:800;font-size:15px;letter-spacing:-0.01em">${node.name}</p><p style="margin:0;font-weight:700">Sampah ${node.currentVolumePercent}% — ${label}</p><p style="margin:4px 0 0;color:#344054;font-size:13px">${node.address}</p></div>`
           )
           .on('click', () => onSelectNode(node));
 
         markersRef.current[node.id] = marker;
       });
 
-      // 4. Rute armada — garis lebih tebal agar terlihat di layar kecil
+      // 4. Rute armada — oranye safety khas ruang kontrol + casing putih
       if (showRoute && cvrp.waypoints.length > 0) {
         const latlngs: [number, number][] = cvrp.waypoints.map((wp) => [wp.lat, wp.lng]);
-        const polyline = L.polyline(latlngs, {
-          color: '#1d4ed8',
-          weight: 5,
-          opacity: 0.9,
+        L.polyline(latlngs, {
+          color: '#fffdf8',
+          weight: 9,
+          opacity: 0.95,
           lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(map);
+        const polyline = L.polyline(latlngs, {
+          color: '#E85D04',
+          weight: 5,
+          opacity: 1,
+          lineCap: 'round',
+          lineJoin: 'round',
+          dashArray: '1 7',
         }).addTo(map);
         routePolylineRef.current = polyline;
       }
@@ -204,75 +210,85 @@ export const InteractiveMap: React.FC<Props> = ({
 
   return (
     <div
-      className="relative w-full h-full rounded-[10px] overflow-hidden border"
+      className="relative w-full h-full rounded-[10px] overflow-hidden grain"
       style={{
         minHeight: 480,
-        borderColor: 'var(--border-strong)',
+        border: '1.5px solid var(--border-strong)',
+        boxShadow: 'var(--hard-shadow)',
         backgroundColor: 'var(--bg-secondary)',
       }}
     >
       <div ref={mapContainerRef} className="w-full h-full z-0" style={{ minHeight: 480 }} />
 
-      {/* Legenda Bahasa Indonesia, teks ≥13px, ikon + label */}
+      {/* Legenda HUD ruang kontrol — Bahasa Indonesia, tanpa emoji */}
       <div
-        className="absolute top-3 left-3 z-[1000] px-4 py-3 rounded-lg text-sm space-y-1.5 shadow-lg border"
+        className="absolute top-3 left-3 z-[1000] px-4 py-3 rounded-[10px] text-sm space-y-1.5"
         style={{
-          backgroundColor: theme === 'light' ? 'rgba(255,255,255,.96)' : 'rgba(17,22,29,.96)',
-          borderColor: 'var(--border-strong)',
+          backgroundColor: theme === 'light' ? 'rgba(255,253,248,.97)' : 'rgba(22,27,34,.97)',
+          border: '1.5px solid var(--border-strong)',
+          boxShadow: 'var(--hard-shadow)',
           color: 'var(--text-primary)',
-          maxWidth: 250,
+          maxWidth: 258,
         }}
       >
-        <p className="font-extrabold text-sm">Peta TPS Kota Magelang</p>
-        <p className="flex items-center gap-2 text-sm">
+        <p className="font-display font-extrabold text-sm tracking-tight">PETA TPS · KOTA MAGELANG</p>
+        <p className="flex items-center gap-2 text-sm font-semibold">
           <span
             aria-hidden
-            className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white font-extrabold"
-            style={{ backgroundColor: '#dc2626', fontSize: 13 }}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white font-display"
+            style={{ backgroundColor: '#C1272D', border: '2px solid #101828', fontSize: 11 }}
           >
-            ⚠
+            80+
           </span>
           Penuh (≥ 80%) — segera angkut
         </p>
-        <p className="flex items-center gap-2 text-sm">
+        <p className="flex items-center gap-2 text-sm font-semibold">
           <span
             aria-hidden
-            className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white font-extrabold"
-            style={{ backgroundColor: '#d97706', fontSize: 13 }}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white font-display"
+            style={{ backgroundColor: '#B45309', border: '2px solid #101828', fontSize: 11 }}
           >
-            !
+            50+
           </span>
           Hampir penuh (50–79%)
         </p>
-        <p className="flex items-center gap-2 text-sm">
+        <p className="flex items-center gap-2 text-sm font-semibold">
           <span
             aria-hidden
-            className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white font-extrabold"
-            style={{ backgroundColor: '#15803d', fontSize: 13 }}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white font-display"
+            style={{ backgroundColor: '#0E7A3D', border: '2px solid #101828', fontSize: 11 }}
           >
-            ✓
+            OK
           </span>
           Aman (&lt; 50%)
         </p>
-        <p className="flex items-center gap-2 text-sm">
+        <p className="flex items-center gap-2 text-sm font-semibold">
           <span
             aria-hidden
-            className="inline-flex items-center justify-center w-6 h-6 rounded text-white font-extrabold"
-            style={{ backgroundColor: '#1d4ed8', fontSize: 13 }}
+            className="inline-flex items-center justify-center w-7 h-7 rounded text-white font-display"
+            style={{ backgroundColor: '#0E7A3D', border: '2px solid #101828', fontSize: 10 }}
           >
             DLH
           </span>
           Pool armada (berangkat)
         </p>
-        <p className="flex items-center gap-2 text-sm">
+        <p className="flex items-center gap-2 text-sm font-semibold">
           <span
             aria-hidden
-            className="inline-flex items-center justify-center w-6 h-6 rounded text-white font-extrabold"
-            style={{ backgroundColor: '#7e22ce', fontSize: 13 }}
+            className="inline-flex items-center justify-center w-7 h-7 rounded text-white font-display"
+            style={{ backgroundColor: '#101828', border: '2px solid #101828', fontSize: 10 }}
           >
             TPA
           </span>
           TPSA Banyuurip (bongkar)
+        </p>
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <span
+            aria-hidden
+            className="inline-block w-7 h-0"
+            style={{ borderTop: '5px solid #E85D04', borderRadius: 2 }}
+          />
+          Rute armada DLH 03
         </p>
       </div>
     </div>
