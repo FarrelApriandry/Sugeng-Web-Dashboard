@@ -1,5 +1,7 @@
-// Helper polling ESP32 langsung (jalur demo tanpa DB).
-// ESP32 menyajikan GET http://<IP>/data -> JSON (lihat firmware/SugengNode_LiveHTTP.ino)
+// Tipe payload sensor dari alat fisik + mapping ke TPSNode dashboard.
+// Transport: USB serial via Web Serial API (lihat liveSerial.ts).
+// Firmware kirim 1 baris JSON:{...} tiap 2 detik
+// (lihat firmware/SugengNode_USBSerial.ino)
 import type { TPSNode } from '../data/dummyData';
 
 export interface LiveSensorPayload {
@@ -22,33 +24,6 @@ export interface LiveSensorPayload {
 
 /** ID TPS yang diwakili alat fisik saat demo (prototype di kampus). */
 export const LIVE_NODE_ID = 'NODE-MGL-05';
-
-/** Bersihkan input user jadi host[:port] — terima "192.168.1.50", "http://192.168.1.50/data", dll. */
-export function normalizeIp(input: string): string {
-  let s = (input || '').trim();
-  s = s.replace(/^https?:\/\//i, '');
-  s = s.split('/')[0];
-  return s;
-}
-
-export function liveUrl(input: string): string {
-  const host = normalizeIp(input);
-  return `http://${host}/data`;
-}
-
-export async function fetchLiveSensor(ipInput: string, timeoutMs = 4000): Promise<LiveSensorPayload> {
-  const url = liveUrl(ipInput);
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const j = (await res.json()) as LiveSensorPayload;
-    return j;
-  } finally {
-    clearTimeout(t);
-  }
-}
 
 function gasStatus(ppm: number): TPSNode['gasStatusMQ135'] {
   if (ppm >= 60) return 'Tinggi (Bau Busuk)';

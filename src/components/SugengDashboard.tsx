@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { TPSNode, CVRPSolution } from '../data/dummyData';
 import { DUMMY_TPS_NODES, INITIAL_CVRP_SOLUTION } from '../data/dummyData';
-import { fetchLiveSensor, applyLiveToNode, LIVE_NODE_ID, normalizeIp } from '../lib/liveSensor';
+import { applyLiveToNode, LIVE_NODE_ID } from '../lib/liveSensor';
 import type { LiveSensorPayload } from '../lib/liveSensor';
+import { connectSerial, disconnectSerial, isSerialSupported } from '../lib/liveSerial';
 import { InteractiveMap } from './InteractiveMap';
 import {
   MapPin,
@@ -89,46 +90,58 @@ export const SugengDashboard: React.FC = () => {
   const [theme, setTheme] = useState<Theme>('light'); // P0: terang sebagai default
   const [dispatchSent, setDispatchSent] = useState<boolean>(false);
 
-  /* ---------- LIVE SENSOR (jalur demo: ESP32 HTTP langsung, tanpa DB) ---------- */
-  const [liveEnabled, setLiveEnabled] = useState<boolean>(false);
-  const [liveIp, setLiveIp] = useState<string>('');
+  /* ---------- LIVE SENSOR (jalur demo: USB serial langsung, tanpa WiFi/DB) ---------- */
+  const [liveOn, setLiveOn] = useState<boolean>(false); // port serial terbuka?
+  const [liveConnecting, setLiveConnecting] = useState<boolean>(false);
   const [liveError, setLiveError] = useState<string | null>(null);
   const [liveLastOk, setLiveLastOk] = useState<string>('');
   const [liveRaw, setLiveRaw] = useState<LiveSensorPayload | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Polling tiap 3 detik saat live ON + IP terisi
+  const applyPayload = (payload: LiveSensorPayload) => {
+    const label = new Date().toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }) + ' WIB (USB)';
+    setNodes((prev) => prev.map((n) => (n.id === LIVE_NODE_ID ? applyLiveToNode(n, payload, label) : n)));
+    setSelectedNode((prev) => (prev && prev.id === LIVE_NODE_ID ? applyLiveToNode(prev, payload, label) : prev));
+    setLiveRaw(payload);
+    setLiveError(null);
+    setLiveLastOk(label);
+  };
+
+  // Lepas port saat komponen unmount
   useEffect(() => {
-    if (!liveEnabled || normalizeIp(liveIp) === '') return;
-    let cancelled = false;
-    const tick = async () => {
-      try {
-        const payload = await fetchLiveSensor(liveIp);
-        if (cancelled) return;
-        const label = new Date().toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }) + ' WIB (LIVE)';
-        setNodes((prev) => prev.map((n) => (n.id === LIVE_NODE_ID ? applyLiveToNode(n, payload, label) : n)));
-        setSelectedNode((prev) => (prev && prev.id === LIVE_NODE_ID ? applyLiveToNode(prev, payload, label) : prev));
-        setLiveRaw(payload);
-        setLiveError(null);
-        setLiveLastOk(label);
-      } catch (e) {
-        if (cancelled) return;
-        const msg = e instanceof Error ? e.message : 'Gagal mengambil data';
-        setLiveError(
-          msg.includes('Failed to fetch') || msg.includes('abort')
-            ? 'Alat tidak terjangkau — cek: 1) satu WiFi/hotspot, 2) IP benar, 3) ESP32 nyala.'
-            : msg
-        );
-      }
-    };
-    tick();
-    pollRef.current = setInterval(tick, 3000);
     return () => {
-      cancelled = true;
-      if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = null;
+      disconnectSerial();
     };
-  }, [liveEnabled, liveIp]);
+  }, []);
+
+  const handleConnectUsb = async () => {
+    setLiveConnecting(true);
+    setLiveError(null);
+    try {
+      await connectSerial(
+        (payload) => applyPayload(payload),
+        (msg) => {
+          setLiveError(msg);
+          setLiveOn(false);
+        }
+      );
+      setLiveOn(true);
+      {
+        const found = nodes.find((n) => n.id === LIVE_NODE_ID);
+        if (found) setSelectedNode(found);
+      }
+    } catch (e) {
+      setLiveError(e instanceof Error ? e.message : 'Gagal membuka port serial.');
+      setLiveOn(false);
+    } finally {
+      setLiveConnecting(false);
+    }
+  };
+
+  const handleDisconnectUsb = async () => {
+    await disconnectSerial();
+    setLiveOn(false);
+    setLiveError(null);
+  };
 
   useEffect(() => {
     const updateClock = () => {
@@ -403,7 +416,7 @@ export const SugengDashboard: React.FC = () => {
                         </span>
                         <span className="block text-base font-bold mt-1 leading-snug">{node.name}</span>
                         <span className="block text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                          {node.id === LIVE_NODE_ID && liveEnabled && liveLastOk ? '🔴 LIVE • ' : ''}Bau: {interpretGas(node.gasPpmMQ135)} • {node.lastTelemetry}
+                          {node.id === LIVE_NODE_ID && liveOn && liveLastOk ? '🔴 USB • ' : ''}Bau: {interpretGas(node.gasPpmMQ135)} • {node.lastTelemetry}
                         </span>
                       </button>
                     );
@@ -782,57 +795,46 @@ export const SugengDashboard: React.FC = () => {
                   Penjelasan dibuat sederhana. Kode alat (mis. MQ-135) disembunyikan di “Detail teknis”.
                 </p>
 
-                {/* ---- KONTROL ALAT LIVE (demo: ESP32 HTTP langsung) ---- */}
-                <div className="card-inset p-4 mt-4 space-y-3" aria-label="Kontrol alat live">
+                {/* ---- KONTROL ALAT LIVE (demo: USB serial langsung, tanpa WiFi) ---- */}
+                <div className="card-inset p-4 mt-4 space-y-3" aria-label="Kontrol alat live USB">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-extrabold text-base">
-                      Sumber data: {liveEnabled && liveLastOk ? '🔴 Alat Live' : '🟡 Data Contoh'}
+                      Sumber data: {liveOn && liveLastOk ? '🔴 Alat Live (USB)' : '🟡 Data Contoh'}
                     </p>
-                    <label className="flex items-center gap-3 cursor-pointer min-h-[48px]">
-                      <input
-                        type="checkbox"
-                        checked={liveEnabled}
-                        onChange={(e: any) => setLiveEnabled(e.target.checked)}
-                        className="w-6 h-6"
-                        style={{ accentColor: 'var(--safety)' }}
-                        aria-label="Aktifkan data live dari alat"
-                      />
-                      <span className="font-bold text-base">Alat Live ON</span>
-                    </label>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="IP ESP32, mis. 192.168.1.50"
-                      value={liveIp}
-                      onChange={(e: any) => setLiveIp(e.target.value)}
-                      aria-label="Alamat IP ESP32"
-                      className="flex-1 rounded-lg px-3 min-h-[48px] text-base border font-mono"
-                      style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-strong)', color: 'var(--text-primary)' }}
-                    />
-                    <button
-                      onClick={() => {
-                        const found = nodes.find((n) => n.id === LIVE_NODE_ID);
-                        if (found) { setSelectedNode(found); setActiveTab('telemetry'); }
-                        if (normalizeIp(liveIp) !== '') setLiveEnabled(true);
-                      }}
-                      className="min-h-[48px] px-4 rounded-lg text-base font-bold border"
-                      style={{ borderColor: 'var(--border-strong)' }}
-                    >
-                      Pakai alat di TPS Kampus UNTIDAR
-                    </button>
+                    {!liveOn ? (
+                      <button
+                        onClick={handleConnectUsb}
+                        disabled={liveConnecting}
+                        className="lift min-h-[52px] px-5 rounded-[10px] text-base font-display font-extrabold tracking-tight flex items-center gap-2 text-white disabled:opacity-60"
+                        style={{ backgroundColor: 'var(--safety)', border: '1.5px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)' }}
+                      >
+                        {liveConnecting ? 'Membuka port…' : '🔌 Hubungkan via USB'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleDisconnectUsb}
+                        className="min-h-[52px] px-5 rounded-[10px] text-base font-bold border"
+                        style={{ borderColor: 'var(--border-strong)' }}
+                      >
+                        Putuskan USB
+                      </button>
+                    )}
                   </div>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Alat fisik terpasang di <strong>{LIVE_NODE_ID} (TPS Kampus Tuguran UNTIDAR)</strong>. Data live menimpa kartu itu tiap 3 detik. ESP32 + laptop harus satu WiFi/hotspot.
+                    Colok ESP32 via kabel USB ke laptop ini, klik <strong>Hubungkan via USB</strong>, pilih port ESP32 (baud 115200).
+                    Data live menimpa <strong>{LIVE_NODE_ID} (TPS Kampus Tuguran UNTIDAR)</strong> tiap 2 detik.
                   </p>
-                  {liveEnabled && liveError && (
+                  {!isSerialSupported() && (
+                    <p role="alert" className="text-base font-bold" style={{ color: 'var(--critical)' }}>
+                      ⚠ Browser ini tidak mendukung USB serial — pakai Chrome/Edge di laptop dan buka dashboard via http://localhost:5432 (bukan IP-LAN / Firefox).
+                    </p>
+                  )}
+                  {liveError && (
                     <p role="alert" className="text-base font-bold" style={{ color: 'var(--critical)' }}>⚠ {liveError}</p>
                   )}
-                  {liveEnabled && !liveError && liveLastOk && (
+                  {liveOn && !liveError && liveLastOk && (
                     <p role="status" className="text-sm font-semibold" style={{ color: 'var(--success)' }}>
-                      ✓ Terhubung — update terakhir {liveLastOk}
-                      {typeof liveRaw?.wifiRssi === 'number' ? ` • Sinyal WiFi ${liveRaw.wifiRssi} dBm` : ''}
+                      ✓ Terhubung via USB — update terakhir {liveLastOk}
                       {typeof liveRaw?.uptimeSec === 'number' ? ` • Alat nyala ${liveRaw.uptimeSec} dtk` : ''}
                     </p>
                   )}
