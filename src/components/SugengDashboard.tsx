@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { TPSNode, CVRPSolution } from '../data/dummyData';
 import { DUMMY_TPS_NODES, INITIAL_CVRP_SOLUTION } from '../data/dummyData';
+import { fetchLiveSensor, applyLiveToNode, LIVE_NODE_ID, normalizeIp } from '../lib/liveSensor';
+import type { LiveSensorPayload } from '../lib/liveSensor';
 import { InteractiveMap } from './InteractiveMap';
 import {
   MapPin,
@@ -86,6 +88,47 @@ export const SugengDashboard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [theme, setTheme] = useState<Theme>('light'); // P0: terang sebagai default
   const [dispatchSent, setDispatchSent] = useState<boolean>(false);
+
+  /* ---------- LIVE SENSOR (jalur demo: ESP32 HTTP langsung, tanpa DB) ---------- */
+  const [liveEnabled, setLiveEnabled] = useState<boolean>(false);
+  const [liveIp, setLiveIp] = useState<string>('');
+  const [liveError, setLiveError] = useState<string | null>(null);
+  const [liveLastOk, setLiveLastOk] = useState<string>('');
+  const [liveRaw, setLiveRaw] = useState<LiveSensorPayload | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Polling tiap 3 detik saat live ON + IP terisi
+  useEffect(() => {
+    if (!liveEnabled || normalizeIp(liveIp) === '') return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const payload = await fetchLiveSensor(liveIp);
+        if (cancelled) return;
+        const label = new Date().toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }) + ' WIB (LIVE)';
+        setNodes((prev) => prev.map((n) => (n.id === LIVE_NODE_ID ? applyLiveToNode(n, payload, label) : n)));
+        setSelectedNode((prev) => (prev && prev.id === LIVE_NODE_ID ? applyLiveToNode(prev, payload, label) : prev));
+        setLiveRaw(payload);
+        setLiveError(null);
+        setLiveLastOk(label);
+      } catch (e) {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : 'Gagal mengambil data';
+        setLiveError(
+          msg.includes('Failed to fetch') || msg.includes('abort')
+            ? 'Alat tidak terjangkau — cek: 1) satu WiFi/hotspot, 2) IP benar, 3) ESP32 nyala.'
+            : msg
+        );
+      }
+    };
+    tick();
+    pollRef.current = setInterval(tick, 3000);
+    return () => {
+      cancelled = true;
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = null;
+    };
+  }, [liveEnabled, liveIp]);
 
   useEffect(() => {
     const updateClock = () => {
@@ -360,7 +403,7 @@ export const SugengDashboard: React.FC = () => {
                         </span>
                         <span className="block text-base font-bold mt-1 leading-snug">{node.name}</span>
                         <span className="block text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                          Bau: {interpretGas(node.gasPpmMQ135)} • {node.lastTelemetry}
+                          {node.id === LIVE_NODE_ID && liveEnabled && liveLastOk ? '🔴 LIVE • ' : ''}Bau: {interpretGas(node.gasPpmMQ135)} • {node.lastTelemetry}
                         </span>
                       </button>
                     );
@@ -738,6 +781,68 @@ export const SugengDashboard: React.FC = () => {
                 <p className="text-base mt-1" style={{ color: 'var(--text-secondary)' }}>
                   Penjelasan dibuat sederhana. Kode alat (mis. MQ-135) disembunyikan di “Detail teknis”.
                 </p>
+
+                {/* ---- KONTROL ALAT LIVE (demo: ESP32 HTTP langsung) ---- */}
+                <div className="card-inset p-4 mt-4 space-y-3" aria-label="Kontrol alat live">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-extrabold text-base">
+                      Sumber data: {liveEnabled && liveLastOk ? '🔴 Alat Live' : '🟡 Data Contoh'}
+                    </p>
+                    <label className="flex items-center gap-3 cursor-pointer min-h-[48px]">
+                      <input
+                        type="checkbox"
+                        checked={liveEnabled}
+                        onChange={(e: any) => setLiveEnabled(e.target.checked)}
+                        className="w-6 h-6"
+                        style={{ accentColor: 'var(--safety)' }}
+                        aria-label="Aktifkan data live dari alat"
+                      />
+                      <span className="font-bold text-base">Alat Live ON</span>
+                    </label>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="IP ESP32, mis. 192.168.1.50"
+                      value={liveIp}
+                      onChange={(e: any) => setLiveIp(e.target.value)}
+                      aria-label="Alamat IP ESP32"
+                      className="flex-1 rounded-lg px-3 min-h-[48px] text-base border font-mono"
+                      style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-strong)', color: 'var(--text-primary)' }}
+                    />
+                    <button
+                      onClick={() => {
+                        const found = nodes.find((n) => n.id === LIVE_NODE_ID);
+                        if (found) { setSelectedNode(found); setActiveTab('telemetry'); }
+                        if (normalizeIp(liveIp) !== '') setLiveEnabled(true);
+                      }}
+                      className="min-h-[48px] px-4 rounded-lg text-base font-bold border"
+                      style={{ borderColor: 'var(--border-strong)' }}
+                    >
+                      Pakai alat di TPS Kampus UNTIDAR
+                    </button>
+                  </div>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    Alat fisik terpasang di <strong>{LIVE_NODE_ID} (TPS Kampus Tuguran UNTIDAR)</strong>. Data live menimpa kartu itu tiap 3 detik. ESP32 + laptop harus satu WiFi/hotspot.
+                  </p>
+                  {liveEnabled && liveError && (
+                    <p role="alert" className="text-base font-bold" style={{ color: 'var(--critical)' }}>⚠ {liveError}</p>
+                  )}
+                  {liveEnabled && !liveError && liveLastOk && (
+                    <p role="status" className="text-sm font-semibold" style={{ color: 'var(--success)' }}>
+                      ✓ Terhubung — update terakhir {liveLastOk}
+                      {typeof liveRaw?.wifiRssi === 'number' ? ` • Sinyal WiFi ${liveRaw.wifiRssi} dBm` : ''}
+                      {typeof liveRaw?.uptimeSec === 'number' ? ` • Alat nyala ${liveRaw.uptimeSec} dtk` : ''}
+                    </p>
+                  )}
+                  {liveRaw && (
+                    <details className="text-sm card-inset p-3">
+                      <summary className="font-bold cursor-pointer min-h-[44px] flex items-center">JSON mentah dari alat (untuk teknisi)</summary>
+                      <pre className="mt-2 overflow-x-auto font-mono text-xs p-2 rounded" style={{ backgroundColor: 'var(--bg-primary)' }}>{JSON.stringify(liveRaw, null, 2)}</pre>
+                    </details>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <section aria-label="Isi sampah" className="reveal card p-5 space-y-2" style={{ ['--d' as string]: '120ms' }}>
