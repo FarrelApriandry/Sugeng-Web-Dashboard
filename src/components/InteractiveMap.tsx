@@ -17,7 +17,7 @@ function statusOf(node: TPSNode): 'critical' | 'warning' | 'optimal' {
   return 'optimal';
 }
 
-// API key CARTO Basemaps (paket raster) via env — menghilangkan watermark "API key required".
+// API key CARTO Basemaps via env untuk raster tiles.
 // Astro: variabel diawali PUBLIC_ otomatis tersedia di client via import.meta.env.
 const CARTO_API_KEY = import.meta.env.PUBLIC_CARTO_KEY as string | undefined;
 
@@ -61,7 +61,7 @@ export const InteractiveMap: React.FC<Props> = ({
         zoomControl: false,
       });
 
-      // Kontrol zoom besar di kanan bawah — mudah ditekan
+      // Kontrol zoom di kanan bawah
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       mapInstanceRef.current = map;
@@ -113,11 +113,11 @@ export const InteractiveMap: React.FC<Props> = ({
         routePolylineRef.current = null;
       }
 
-      // 1. Pool DLH — lencana hijau DLH khas ruang kontrol
+      // Pool armada DLH
       const depotIcon = L.divIcon({
         className: 'leaflet-divicon-sugeng',
         html: `
-          <div class="sugeng-marker sugeng-marker-depot" title="Pool DLH Kota Magelang — tempat berangkat armada">
+          <div class="sugeng-marker sugeng-marker-depot" title="Pool DLH Kota Magelang: titik awal armada">
             DLH
           </div>
         `,
@@ -131,11 +131,11 @@ export const InteractiveMap: React.FC<Props> = ({
         );
       markersRef.current['depot'] = depotMarker;
 
-      // 2. TPSA Banyuurip — lencana tinta khas ruang kontrol
+      // TPSA Banyuurip
       const landfillIcon = L.divIcon({
         className: 'leaflet-divicon-sugeng',
         html: `
-          <div class="sugeng-marker sugeng-marker-landfill" title="TPSA Banyuurip — tempat bongkar muatan">
+          <div class="sugeng-marker sugeng-marker-landfill" title="TPSA Banyuurip: tempat bongkar muatan">
             TPA
           </div>
         `,
@@ -149,7 +149,7 @@ export const InteractiveMap: React.FC<Props> = ({
         );
       markersRef.current['landfill'] = landfillMarker;
 
-      // 3. Marker TPS — lingkaran stencil 54px, angka display, tanpa emoji
+      // Marker titik TPS
       nodes.forEach((node) => {
         const st = statusOf(node);
         const label = st === 'critical' ? 'Penuh, segera angkut' : st === 'warning' ? 'Hampir penuh' : 'Aman';
@@ -158,8 +158,8 @@ export const InteractiveMap: React.FC<Props> = ({
         const icon = L.divIcon({
           className: 'leaflet-divicon-sugeng',
           html: `
-            <div title="${node.name} — ${node.currentVolumePercent}% (${label})" style="position:relative;cursor:pointer;">
-              <div class="sugeng-marker sugeng-marker-${st} ${st === 'critical' ? 'critical-pulse' : ''} ${isSelected ? 'sugeng-marker-selected' : ''}" style="width:54px;height:54px;font-size:15px;">
+            <div title="${node.name}: ${node.currentVolumePercent}% (${label})" style="position:relative;cursor:pointer;">
+              <div class="sugeng-marker sugeng-marker-${st} ${isSelected ? 'sugeng-marker-selected' : ''}" style="width:54px;height:54px;font-size:15px;">
                 ${node.currentVolumePercent}%
               </div>
             </div>
@@ -168,17 +168,17 @@ export const InteractiveMap: React.FC<Props> = ({
           iconAnchor: [27, 27],
         });
 
-        const marker = L.marker(node.coordinates, { icon, keyboard: true, title: `${node.name} — ${node.currentVolumePercent}% (${label})` })
+        const marker = L.marker(node.coordinates, { icon, keyboard: true, title: `${node.name}: ${node.currentVolumePercent}% (${label})` })
           .addTo(map)
           .bindPopup(
-            `<div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.55;color:#101828;min-width:200px"><p style="margin:0 0 4px;font-family:Archivo,sans-serif;font-weight:800;font-size:15px;letter-spacing:-0.01em">${node.name}</p><p style="margin:0;font-weight:700">Sampah ${node.currentVolumePercent}% — ${label}</p><p style="margin:4px 0 0;color:#344054;font-size:13px">${node.address}</p></div>`
+            `<div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.55;color:#101828;min-width:200px"><p style="margin:0 0 4px;font-family:Archivo,sans-serif;font-weight:800;font-size:15px;letter-spacing:-0.01em">${node.name}</p><p style="margin:0;font-weight:700">Sampah ${node.currentVolumePercent}%: ${label}</p><p style="margin:4px 0 0;color:#344054;font-size:13px">${node.address}</p></div>`
           )
           .on('click', () => onSelectNode(node));
 
         markersRef.current[node.id] = marker;
       });
 
-      // 4. Rute armada — oranye safety khas ruang kontrol + casing putih
+      // Rute optimasi armada
       if (showRoute && cvrp.waypoints.length > 0) {
         const latlngs: [number, number][] = cvrp.waypoints.map((wp) => [wp.lat, wp.lng]);
         L.polyline(latlngs, {
@@ -210,7 +210,7 @@ export const InteractiveMap: React.FC<Props> = ({
 
   return (
     <div
-      className="relative w-full h-full rounded-[10px] overflow-hidden grain"
+      className="relative w-full h-full rounded-[10px] overflow-hidden"
       style={{
         minHeight: 480,
         border: '1.5px solid var(--border-strong)',
@@ -220,7 +220,7 @@ export const InteractiveMap: React.FC<Props> = ({
     >
       <div ref={mapContainerRef} className="w-full h-full z-0" style={{ minHeight: 480 }} />
 
-      {/* Legenda HUD ruang kontrol — Bahasa Indonesia, tanpa emoji */}
+      {/* Legenda peta */}
       <div
         className="absolute top-3 left-3 z-[1000] px-4 py-3 rounded-[10px] text-sm space-y-1.5"
         style={{
@@ -240,17 +240,17 @@ export const InteractiveMap: React.FC<Props> = ({
           >
             80+
           </span>
-          Penuh (≥ 80%) — segera angkut
+          Penuh (≥ 80%): segera angkut
         </p>
         <p className="flex items-center gap-2 text-sm font-semibold">
           <span
             aria-hidden
             className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white font-display"
-            style={{ backgroundColor: '#B45309', border: '2px solid #101828', fontSize: 11 }}
+            style={{ backgroundColor: '#92400e', border: '2px solid #101828', fontSize: 11 }}
           >
             50+
           </span>
-          Hampir penuh (50–79%)
+          Hampir penuh (50-79%)
         </p>
         <p className="flex items-center gap-2 text-sm font-semibold">
           <span

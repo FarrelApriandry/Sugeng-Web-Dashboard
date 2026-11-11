@@ -220,7 +220,7 @@ export function subscribeToRealtime(options: {
       (payload) => {
         const newRow = payload.new as DbTpsNode;
         if (newRow && newRow.node_id) {
-          console.log(`⚡ [REALTIME WSS] Pembaruan tps_nodes: ${newRow.node_id} (Vol: ${newRow.last_volume_percent}%)`);
+          console.log(`[REALTIME WSS] Pembaruan tps_nodes: ${newRow.node_id} (Vol: ${newRow.last_volume_percent}%)`);
           const uiNode = mapDbNodeToUiNode(newRow);
           options.onNodeChange(uiNode);
         }
@@ -237,7 +237,7 @@ export function subscribeToRealtime(options: {
       (payload) => {
         const log = payload.new as DbTelemetryLog;
         if (log && log.node_id) {
-          console.log(`⚡ [REALTIME WSS] Telemetri Baru masuk: ${log.node_id} (Vol: ${log.current_volume_percent}%, Jarak: ${log.measured_distance_cm} cm)`);
+          console.log(`[REALTIME WSS] Telemetri Baru masuk: ${log.node_id} (Vol: ${log.current_volume_percent}%, Jarak: ${log.measured_distance_cm} cm)`);
 
           const sensorPayload: LiveSensorPayload = {
             nodeId: log.node_id,

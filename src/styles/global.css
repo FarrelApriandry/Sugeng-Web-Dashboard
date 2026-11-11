@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* ===== Mode gelap (ruang kontrol malam) ===== */
+  /* Mode gelap */
   .theme-dark {
     --bg-primary: #0d1117;
     --bg-secondary: #161b22;
@@ -22,13 +22,13 @@
     --info: #e85d04;
     --dlh: #32d583;
     --safety: #ff7a2f;
+    --safety-text: #101828;
     --kertas: #0d1117;
     --tinta: #f4f1e8;
     --hard-shadow: 3px 3px 0 0 #000000;
-    --grid-line: rgba(244, 241, 232, 0.055);
   }
 
-  /* ===== Mode terang (default — ruang kontrol bersih) ===== */
+  /* Mode terang */
   .theme-light {
     --bg-primary: #f7f5ef;
     --bg-secondary: #fffdf8;
@@ -37,20 +37,36 @@
     --border-strong: #101828;
     --text-primary: #101828;
     --text-secondary: #344054;
-    --text-muted: #667085;
+    --text-muted: #525866;
     --critical: #c1272d;
     --critical-bg: #fbe3e1;
-    --warning: #b45309;
+    --warning: #92400e;
     --warning-bg: #fdf0d5;
     --success: #0e7a3d;
     --success-bg: #dff5e6;
     --info: #0e7a3d;
     --dlh: #0e7a3d;
-    --safety: #e85d04;
+    --safety: #c2410c;
+    --safety-text: #ffffff;
     --kertas: #f7f5ef;
     --tinta: #101828;
     --hard-shadow: 3px 3px 0 0 #101828;
-    --grid-line: rgba(16, 24, 40, 0.07);
+  }
+
+  /* Accessible interaction affordances */
+  button,
+  [role="button"],
+  select,
+  summary,
+  a[href],
+  label[for] {
+    cursor: pointer;
+  }
+
+  [disabled],
+  [aria-disabled="true"],
+  button:disabled {
+    cursor: not-allowed;
   }
 
   html {
@@ -60,10 +76,6 @@
 
   body {
     background-color: var(--bg-primary);
-    background-image:
-      linear-gradient(var(--grid-line) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-    background-size: 24px 24px;
     color: var(--text-primary);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     font-size: 1rem;
@@ -111,45 +123,6 @@
     border-radius: 10px;
     box-shadow: var(--hard-shadow);
   }
-  .spine {
-    position: relative;
-  }
-  .spine::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 10px;
-    bottom: 10px;
-    width: 5px;
-    border-radius: 9999px;
-    background: var(--border);
-  }
-  .spine-critical::before { background: var(--critical); }
-  .spine-warning::before { background: var(--warning); }
-  .spine-optimal::before { background: var(--success); }
-  .hazard {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      var(--warning) 0 10px,
-      #101828 10px 20px
-    );
-  }
-  .hazard-critical {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      var(--critical) 0 10px,
-      #101828 10px 20px
-    );
-  }
-  .grain::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    border-radius: inherit;
-    opacity: 0.5;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='72' height='72' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
-  }
   .reveal {
     animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: var(--d, 0ms);
@@ -167,7 +140,7 @@
   }
 }
 
-/* Scrollbar tegas 12px — mudah digeser */
+/* Scrollbar 12px */
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;
@@ -184,7 +157,6 @@
   background: var(--text-muted);
 }
 
-/* Staggered reveal + denyut marker kritis */
 @keyframes rise {
   0% { opacity: 0; transform: translateY(14px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -194,18 +166,7 @@
   100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
 
-/* Denyut marker kritis — diperhalus */
-@keyframes markerPulse {
-  0% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(193, 39, 45, 0.55); }
-  70% { transform: scale(1.06); box-shadow: 0 0 0 9px rgba(193, 39, 45, 0); }
-  100% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(193, 39, 45, 0); }
-}
-
-.critical-pulse {
-  animation: markerPulse 2.6s infinite;
-}
-
-/* Leaflet: marker stencil SUGENG */
+/* Marker peta SUGENG */
 .leaflet-divicon-sugeng {
   background: transparent;
   border: none;
@@ -229,7 +190,7 @@
   transform: scale(1.12);
 }
 .sugeng-marker-critical { background: #c1272d; }
-.sugeng-marker-warning { background: #b45309; }
+.sugeng-marker-warning { background: #92400e; }
 .sugeng-marker-optimal { background: #0e7a3d; }
 .sugeng-marker-selected {
   outline: 3px solid #101828;
@@ -248,7 +209,7 @@
   letter-spacing: 0.04em;
 }
 
-/* Leaflet: perbesar kontrol zoom agar mudah ditekan */
+/* Kontrol zoom Leaflet */
 .leaflet-bar a {
   width: 40px !important;
   height: 40px !important;
@@ -276,9 +237,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .critical-pulse,
-  .animate-ping,
-  .animate-pulse,
   .reveal {
     animation: none !important;
   }

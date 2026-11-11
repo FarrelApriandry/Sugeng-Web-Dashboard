@@ -19,11 +19,11 @@ function parseLine(line: string): LiveSensorPayload | null {
 function friendlyError(e: unknown): string {
   const err = e as { name?: string; message?: string };
   if (err?.name === 'NotFoundError' || err?.name === 'AbortError')
-    return 'Pemilihan port dibatalkan — klik lagi lalu pilih port ESP32 (mis. CP2102 / ttyUSB0).';
+    return 'Pemilihan port dibatalkan. Silakan klik lagi dan pilih port ESP32 (misalnya CP2102 atau ttyUSB0).';
   if (err?.name === 'InvalidStateError')
     return 'Port sedang dipakai (tutup Arduino Serial Monitor dulu), lalu coba lagi.';
   if (err?.name === 'SecurityError')
-    return 'Browser menolak akses serial — buka dashboard via http://localhost:5432 (bukan IP-LAN), pakai Chrome/Edge.';
+    return 'Browser menolak akses serial. Buka dashboard melalui http://localhost:5432 (bukan IP LAN) menggunakan Chrome atau Edge.';
   return err?.message || 'Gagal membuka port serial.';
 }
 
@@ -51,7 +51,7 @@ export async function connectSerial(
   const nav = navigator as any;
   if (!nav?.serial)
     throw new Error(
-      'Browser tidak mendukung Web Serial — pakai Chrome/Edge di laptop dan buka via http://localhost:5432.'
+      'Browser tidak mendukung Web Serial. Gunakan browser Chrome atau Edge di komputer dan buka melalui http://localhost:5432.'
     );
   await disconnectSerial();
   let port: any;
@@ -81,7 +81,7 @@ export async function connectSerial(
   activePort = port;
   stopFlag = false;
 
-  // Loop baca — jalan di background, tiap baris JSON: -> onData
+  // Membaca stream data serial dan mem-parsing payload JSON baris demi baris
   const decoder = new TextDecoder();
   let buf = '';
   try {
@@ -125,7 +125,7 @@ export async function connectSerial(
   }
 }
 
-/* ---------- REALTIME WEBSOCKET BRIDGE (<1ms LATENCY PUSH) ---------- */
+// Bridge WebSocket lokal (latensi rendah)
 let activeWs: WebSocket | null = null;
 
 export async function isBridgeAvailable(): Promise<boolean> {

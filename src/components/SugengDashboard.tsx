@@ -34,33 +34,33 @@ type TabId = 'map' | 'dispatch' | 'tps' | 'telemetry';
 type Theme = 'light' | 'dark';
 type StatusLevel = 'critical' | 'warning' | 'optimal';
 
-/* ---------- Helper status & interpretasi bahasa awam (P1) ---------- */
+// Klasifikasi status operasional dan telemetri sensor
 
 function getStatus(node: TPSNode): { level: StatusLevel; label: string; action: string } {
   const isCritical =
     node.currentVolumePercent >= 80 || node.gasStatusMQ135 === 'Tinggi (Bau Busuk)';
-  if (isCritical) return { level: 'critical', label: 'Penuh — Segera Angkut', action: 'Prioritas pengangkutan' };
+  if (isCritical) return { level: 'critical', label: 'Penuh: Segera Angkut', action: 'Prioritas pengangkutan' };
   if (node.currentVolumePercent >= 50)
-    return { level: 'warning', label: 'Hampir Penuh — Pantau', action: 'Jadwalkan pengangkutan' };
+    return { level: 'warning', label: 'Hampir Penuh: Pantau', action: 'Jadwalkan pengangkutan' };
   return { level: 'optimal', label: 'Aman', action: 'Kondisi normal' };
 }
 
 function interpretGas(ppm: number): string {
-  if (ppm >= 60) return 'Bau menyengat — segera angkut';
-  if (ppm >= 30) return 'Mulai berbau — perlu perhatian';
-  return 'Tidak berbau — aman';
+  if (ppm >= 60) return 'Bau menyengat: segera angkut';
+  if (ppm >= 30) return 'Mulai berbau: perlu perhatian';
+  return 'Tidak berbau: aman';
 }
 
 function interpretMethane(ppm: number): string {
-  if (ppm >= 250) return 'Tinggi — jauhkan dari api';
-  if (ppm >= 100) return 'Naik — pantau berkala';
+  if (ppm >= 250) return 'Tinggi: jauhkan dari api';
+  if (ppm >= 100) return 'Naik: pantau berkala';
   return 'Aman';
 }
 
 function interpretBattery(volt: number): string {
-  if (volt >= 3.9) return 'Baterai penuh — normal';
-  if (volt >= 3.6) return 'Baterai cukup — normal';
-  return 'Baterai lemah — periksa panel surya';
+  if (volt >= 3.9) return 'Baterai penuh: normal';
+  if (volt >= 3.6) return 'Baterai cukup: normal';
+  return 'Baterai lemah: periksa panel surya';
 }
 
 function getAmmoniaInfo(ppm: number) {
@@ -200,7 +200,7 @@ function statusStyle(level: StatusLevel, theme: Theme): React.CSSProperties {
       : { backgroundColor: 'rgba(193,39,45,.22)', color: '#FF7A7A', border: '2px solid #FF7A7A' };
   if (level === 'warning')
     return theme === 'light'
-      ? { backgroundColor: '#FDF0D5', color: '#B45309', border: '2px solid #B45309' }
+      ? { backgroundColor: '#FDF0D5', color: '#92400e', border: '2px solid #92400e' }
       : { backgroundColor: 'rgba(255,184,0,.16)', color: '#FFB800', border: '2px solid #FFB800' };
   return theme === 'light'
     ? { backgroundColor: '#DFF5E6', color: '#0E7A3D', border: '2px solid #0E7A3D' }
@@ -224,14 +224,14 @@ export const SugengDashboard: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | StatusLevel>('all');
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<string>('');
-  const [theme, setTheme] = useState<Theme>('light'); // P0: terang sebagai default
+  const [theme, setTheme] = useState<Theme>('light');
   const [dispatchSent, setDispatchSent] = useState<boolean>(false);
 
-  /* ---------- SUPABASE REALTIME (Cloud WebSocket) ---------- */
+  // Supabase Realtime WebSocket
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeConnectionState>('connecting');
   const [lastRealtimeUpdate, setLastRealtimeUpdate] = useState<string>('');
 
-  // 1. Inisialisasi data & Berlangganan Supabase Realtime WebSocket
+  // Sinkronisasi data awal dan stream realtime Supabase
   useEffect(() => {
     let isMounted = true;
 
@@ -287,8 +287,8 @@ export const SugengDashboard: React.FC = () => {
     };
   }, []);
 
-  /* ---------- LIVE SENSOR (jalur demo: USB serial langsung, tanpa WiFi/DB) ---------- */
-  const [liveOn, setLiveOn] = useState<boolean>(false); // port serial terbuka?
+  // Integrasi hardware telemetri (USB Serial / WebSocket bridge)
+  const [liveOn, setLiveOn] = useState<boolean>(false);
   const [liveConnecting, setLiveConnecting] = useState<boolean>(false);
   const [liveError, setLiveError] = useState<string | null>(null);
   const [liveLastOk, setLiveLastOk] = useState<string>('');
@@ -305,7 +305,6 @@ export const SugengDashboard: React.FC = () => {
     setLiveLastOk(label);
   };
 
-  // Lepas port saat komponen unmount
   useEffect(() => {
     return () => {
       disconnectSerial();
@@ -317,7 +316,7 @@ export const SugengDashboard: React.FC = () => {
     setLiveConnecting(true);
     setLiveError(null);
     try {
-      // 1. Cek apakah Python Local Bridge aktif di 127.0.0.1:5050
+      // Cek ketersediaan bridge lokal sebelum fallback ke Web Serial
       const bridgeOk = await isBridgeAvailable();
       if (bridgeOk) {
         await connectBridge(
@@ -333,7 +332,6 @@ export const SugengDashboard: React.FC = () => {
         return;
       }
 
-      // 2. Jika bridge tidak aktif, gunakan Web Serial API browser
       await connectSerial(
         (payload) => applyPayload(payload),
         (msg) => {
@@ -433,7 +431,7 @@ export const SugengDashboard: React.FC = () => {
       style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', minHeight: '100vh' }}
     >
       <div className="flex flex-col min-h-screen font-sans">
-        {/* ===== HEADER PAPAN OPERASI (Ruang Kontrol Bersih) ===== */}
+        {/* Header papan operasi */}
         <header
           className="sticky top-0 z-50 border-b px-4 lg:px-6 py-3"
           style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-strong)', borderBottomWidth: 2 }}
@@ -453,12 +451,12 @@ export const SugengDashboard: React.FC = () => {
                     SUGENG <span className="font-mono font-bold text-xs align-middle px-2 py-0.5 rounded-full border" style={{ borderColor: 'var(--border-strong)', color: 'var(--text-secondary)' }}>DLH MAGELANG</span>
                   </h1>
                   <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                    Pusat Operasi Sampah — pantau TPS & kirim armada
+                    Pusat Operasi Sampah: pantau TPS dan kirim armada
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {/* Status Badge Supabase Realtime WebSocket */}
+                {/* Status koneksi Supabase Realtime WebSocket */}
                 <div
                   className="flex items-center gap-2 px-3 min-h-[44px] rounded-lg text-xs font-bold border transition-all"
                   style={{
@@ -490,15 +488,12 @@ export const SugengDashboard: React.FC = () => {
                   }
                 >
                   <span className="relative flex h-2.5 w-2.5">
-                    {realtimeStatus === 'connected' && (
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    )}
                     <span
                       className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
                         realtimeStatus === 'connected'
                           ? 'bg-emerald-500'
                           : realtimeStatus === 'connecting'
-                          ? 'bg-amber-500 animate-pulse'
+                          ? 'bg-amber-500'
                           : 'bg-zinc-400'
                       }`}
                     ></span>
@@ -541,7 +536,7 @@ export const SugengDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Navigasi langkah 1→4 (P2: alur Lihat–Kirim–Pantau) */}
+            {/* Navigasi langkah kerja */}
             <nav aria-label="Langkah kerja" className="flex flex-wrap items-center gap-2">
               {tabDefs.map((t) => {
                 const active = activeTab === t.id;
@@ -588,12 +583,12 @@ export const SugengDashboard: React.FC = () => {
               style={{ backgroundColor: 'var(--bg-secondary)', border: '1.5px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)', ['--d' as string]: '60ms' }}
             >
               <span className="flex items-center gap-2 font-display font-bold tracking-tight" style={{ color: 'var(--success)' }}>
-                <span aria-hidden className="w-2.5 h-2.5 rounded-full bg-current animate-pulse" />
+                <span aria-hidden className="w-2.5 h-2.5 rounded-full bg-current" />
                 LANGSUNG
               </span>
               <span className="tabular-nums">{nodes.length} TPS dipantau</span>
               <span style={statusStyle('critical', theme)} className="px-3 py-1 rounded-full text-sm font-extrabold">
-                {criticalNodes.length} TPS penuh — segera angkut
+                {criticalNodes.length} TPS penuh, segera angkut
               </span>
               {warningNodes.length > 0 && (
                 <span style={statusStyle('warning', theme)} className="px-3 py-1 rounded-full text-sm font-extrabold">
@@ -605,19 +600,17 @@ export const SugengDashboard: React.FC = () => {
           </div>
         </header>
 
-        {/* ===== ISI ===== */}
         <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 lg:p-5">
-          {/* ---- LANGKAH 1: Prioritas & Peta ---- */}
+          {/* Prioritas & Peta */}
           {activeTab === 'map' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-              {/* Daftar TPS */}
               <section
                 aria-label="Daftar TPS"
                 className="reveal lg:col-span-3 card p-4 flex flex-col gap-3 lg:h-[640px]"
                 style={{ ['--d' as string]: '120ms' }}
               >
                 <div className="flex items-center justify-between">
-                  <h2 className="font-display text-base font-extrabold tracking-tight">DAFTAR TPS</h2>
+                  <h2 className="font-display text-base font-extrabold tracking-tight">Daftar TPS</h2>
                   <span
                     className="font-mono text-xs font-bold px-3 py-1 rounded-full border"
                     style={{ borderColor: 'var(--border-strong)' }}
@@ -662,14 +655,13 @@ export const SugengDashboard: React.FC = () => {
                   {filteredNodes.map((node, i) => {
                     const st = getStatus(node);
                     const isSelected = selectedNode?.id === node.id;
-                    const spineCls = st.level === 'critical' ? 'spine-critical' : st.level === 'warning' ? 'spine-warning' : 'spine-optimal';
                     return (
                       <button
                         key={node.id}
                         onClick={() => setSelectedNode(node)}
                         aria-pressed={isSelected}
                         aria-label={`${node.name}, sampah ${node.currentVolumePercent} persen, ${st.label}`}
-                        className={`reveal lift spine ${spineCls} w-full text-left pl-4 pr-3 py-3 rounded-[10px] border transition-all min-h-[64px]`}
+                        className="reveal lift w-full text-left p-3 rounded-[10px] border transition-all min-h-[64px]"
                         style={{
                           ['--d' as string]: `${140 + Math.min(i, 8) * 40}ms`,
                           borderColor: 'var(--border-strong)',
@@ -698,7 +690,13 @@ export const SugengDashboard: React.FC = () => {
                         </span>
                         <span className="block text-base font-bold mt-1 leading-snug">{node.name}</span>
                         <span className="block text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                          {node.id === LIVE_NODE_ID && liveOn && liveLastOk ? '🔴 LIVE • ' : ''}Bau: {interpretGas(node.gasPpmMQ135)} • {node.lastTelemetry}
+                          {node.id === LIVE_NODE_ID && liveOn && liveLastOk && (
+                            <span className="inline-flex items-center gap-1 font-bold mr-1.5" style={{ color: 'var(--dlh)' }}>
+                              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true" />
+                              LIVE ·
+                            </span>
+                          )}
+                          Bau: {interpretGas(node.gasPpmMQ135)} · {node.lastTelemetry}
                         </span>
                       </button>
                     );
@@ -735,11 +733,11 @@ export const SugengDashboard: React.FC = () => {
                 </label>
               </div>
 
-              {/* Detail TPS + Peringatan */}
+              {/* Detail TPS & Peringatan */}
               <div className="lg:col-span-3 flex flex-col gap-4 lg:h-[640px] lg:overflow-y-auto">
                 <section aria-label="TPS yang dipilih" className="reveal card p-4 space-y-3" style={{ ['--d' as string]: '160ms' }}>
                   <div className="flex items-center justify-between gap-2">
-                    <h2 className="font-display text-base font-extrabold tracking-tight">TPS YANG DIPILIH</h2>
+                    <h2 className="font-display text-base font-extrabold tracking-tight">TPS Terpilih</h2>
                     {selectedNode && (
                       <span
                         className="text-sm font-extrabold px-3 py-1.5 rounded-full border flex items-center gap-1.5"
@@ -825,14 +823,19 @@ export const SugengDashboard: React.FC = () => {
                       </dl>
                       <button
                         onClick={() => setActiveTab('dispatch')}
-                        className="lift w-full min-h-[56px] rounded-[10px] text-base font-display font-extrabold tracking-tight flex items-center justify-center gap-2 text-white"
-                        style={{ backgroundColor: 'var(--safety)', border: '1.5px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)' }}
+                        className="lift w-full min-h-[56px] rounded-[10px] text-base font-display font-extrabold tracking-tight flex items-center justify-center gap-2"
+                        style={{
+                          backgroundColor: 'var(--safety)',
+                          color: 'var(--safety-text)',
+                          border: '1.5px solid var(--border-strong)',
+                          boxShadow: 'var(--hard-shadow)',
+                        }}
                       >
                         <Send className="w-5 h-5" aria-hidden />
                         Kirim Armada ke TPS ini
                       </button>
                       <p className="text-sm text-center" style={{ color: 'var(--text-secondary)' }}>
-                        Data diperbarui: {selectedNode.lastTelemetry} • Alat menyala
+                        Data diperbarui: {selectedNode.lastTelemetry} · Alat aktif
                       </p>
                     </div>
                   ) : (
@@ -842,7 +845,6 @@ export const SugengDashboard: React.FC = () => {
                   )}
                 </section>
 
-                {/* Peringatan yang bisa diklik */}
                 <section aria-label="Perlu perhatian" className="card p-4 space-y-2.5">
                   <h2 className="text-base font-extrabold flex items-center gap-2" style={{ color: 'var(--critical)' }}>
                     <AlertTriangle className="w-5 h-5" aria-hidden />
@@ -862,7 +864,7 @@ export const SugengDashboard: React.FC = () => {
                           </strong>
                         </span>
                         <span className="block text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                          {interpretGas(n.gasPpmMQ135)} • Ketuk untuk melihat
+                          {interpretGas(n.gasPpmMQ135)} · Ketuk untuk melihat
                         </span>
                       </button>
                     ))}
@@ -877,13 +879,13 @@ export const SugengDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* ---- LANGKAH 2: Kirim Armada ---- */}
+          {/* Pengiriman Armada */}
           {activeTab === 'dispatch' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               <section aria-label="Armada pengangkut" className="reveal lg:col-span-5 card p-5 space-y-4" style={{ ['--d' as string]: '80ms' }}>
                 <div>
                   <p className="font-mono text-xs font-bold tracking-widest" style={{ color: 'var(--text-secondary)' }}>
-                    LANGKAH 02 — PENGIRIMAN ARMADA
+                    Pengiriman Armada
                   </p>
                   <h2 className="font-display font-black text-2xl mt-1 tracking-tight">{cvrp.truckId}</h2>
                   <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
@@ -911,7 +913,7 @@ export const SugengDashboard: React.FC = () => {
                     <div className="h-full rounded-full" style={{ width: `${utilization}%`, backgroundColor: 'var(--safety)' }} />
                   </div>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Terisi {utilization}% — masih cukup untuk {criticalNodes.length} TPS prioritas
+                    Terisi {utilization}%, masih cukup untuk {criticalNodes.length} TPS prioritas
                   </p>
                 </div>
                 <dl className="grid grid-cols-3 gap-2 text-center">
@@ -940,8 +942,13 @@ export const SugengDashboard: React.FC = () => {
                 </dl>
                 <button
                   onClick={handleSendDispatch}
-                  className="lift w-full min-h-[60px] rounded-[10px] text-lg font-display font-extrabold tracking-tight flex items-center justify-center gap-2 text-white"
-                  style={{ backgroundColor: 'var(--safety)', border: '1.5px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)' }}
+                  className="lift w-full min-h-[60px] rounded-[10px] text-lg font-display font-extrabold tracking-tight flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: 'var(--safety)',
+                    color: 'var(--safety-text)',
+                    border: '1.5px solid var(--border-strong)',
+                    boxShadow: 'var(--hard-shadow)',
+                  }}
                 >
                   <Navigation className="w-6 h-6" aria-hidden />
                   {dispatchSent ? 'Rute Terkirim ke Supir!' : 'Kirim Rute ke Supir'}
@@ -957,7 +964,7 @@ export const SugengDashboard: React.FC = () => {
               </section>
 
               <section aria-label="Urutan pemberhentian" className="reveal lg:col-span-7 card p-5 space-y-3" style={{ ['--d' as string]: '120ms' }}>
-                <h2 className="font-display text-base font-extrabold tracking-tight">URUTAN PEMBERHENTIAN ARMADA</h2>
+                <h2 className="font-display text-base font-extrabold tracking-tight">Rencana Urutan Pengangkutan</h2>
                 <ol className="space-y-2">
                   {cvrp.waypoints.map((wp, i) => (
                     <li
@@ -976,7 +983,7 @@ export const SugengDashboard: React.FC = () => {
                         <span>
                           <span className="block font-bold text-base leading-snug">{wp.title}</span>
                           <span className="block text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            {wp.pickupVolumeLiters > 0 ? `Angkut ${wp.pickupVolumeLiters} liter • ` : ''}
+                            {wp.pickupVolumeLiters > 0 ? `Angkut ${wp.pickupVolumeLiters} liter · ` : ''}
                             Tiba sekitar {wp.estimatedArrival}
                           </span>
                         </span>
@@ -987,11 +994,23 @@ export const SugengDashboard: React.FC = () => {
                           wp.status === 'Selesai'
                             ? statusStyle('optimal', theme)
                             : wp.status === 'Menuju Lokasi'
-                              ? { backgroundColor: '#FDEBD9', color: '#C24E03', border: '2px solid #C24E03' }
+                              ? { backgroundColor: '#ffedd5', color: '#9a3412', border: '2px solid #9a3412' }
                               : { borderColor: 'var(--border-strong)', color: 'var(--text-secondary)' }
                         }
                       >
-                        {wp.status === 'Selesai' ? '✓ Selesai' : wp.status === 'Menuju Lokasi' ? '→ Sedang jalan' : 'Menunggu'}
+                        {wp.status === 'Selesai' ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4 inline" aria-hidden="true" />
+                            Selesai
+                          </span>
+                        ) : wp.status === 'Menuju Lokasi' ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Truck className="w-4 h-4 inline" aria-hidden="true" />
+                            Menuju lokasi
+                          </span>
+                        ) : (
+                          'Menunggu'
+                        )}
                       </span>
                     </li>
                   ))}
@@ -1000,13 +1019,13 @@ export const SugengDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* ---- LANGKAH 3: Daftar TPS ---- */}
+          {/* Inventaris TPS */}
           {activeTab === 'tps' && (
             <section aria-label="Semua titik TPS" className="reveal card p-5 space-y-4" style={{ ['--d' as string]: '80ms' }}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="font-mono text-xs font-bold tracking-widest" style={{ color: 'var(--text-secondary)' }}>
-                    LANGKAH 03 — INVENTARIS
+                    Inventaris TPS
                   </p>
                   <h2 className="font-display font-black text-2xl tracking-tight">Semua Titik TPS Kota Magelang</h2>
                 </div>
@@ -1063,39 +1082,56 @@ export const SugengDashboard: React.FC = () => {
             </section>
           )}
 
-          {/* ---- LANGKAH 4: Data Sensor (P2: bahasa awam + detail teknis) ---- */}
+          {/* Data Sensor & Telemetri */}
           {activeTab === 'telemetry' && (
             <div className="space-y-4">
               <div className="reveal card p-5" style={{ ['--d' as string]: '80ms' }}>
                 <p className="font-mono text-xs font-bold tracking-widest" style={{ color: 'var(--text-secondary)' }}>
-                  LANGKAH 04 — PANTAU ALAT
+                  Telemetri Sensor
                 </p>
                 <h2 className="font-display font-black text-2xl tracking-tight">
-                  Kondisi Alat di {selectedNode?.name ?? '—'}
+                  Kondisi Alat: {selectedNode?.name ?? 'Belum Dipilih'}
                 </h2>
                 <p className="text-base mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  Penjelasan dibuat sederhana. Kode alat (mis. MQ-135) disembunyikan di “Detail teknis”.
+                  Penjelasan dibuat sederhana. Detail register teknis (seperti MQ-135) dapat dilihat pada bagian bawah kartu.
                 </p>
 
-                {/* ---- KONTROL ALAT LIVE (demo: USB serial langsung, tanpa WiFi) ---- */}
+                {/* Kontrol alat live */}
                 <div className="card-inset p-4 mt-4 space-y-3" aria-label="Kontrol alat live USB">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-extrabold text-base">
-                      Sumber data:{' '}
-                      {liveOn && liveLastOk
-                        ? '🔴 Alat Live (USB / Local WebSocket)'
-                        : realtimeStatus === 'connected'
-                        ? '🟢 Supabase Realtime (Cloud WebSocket)'
-                        : '🟡 Data Cache / Contoh'}
-                    </p>
+                    <div className="font-extrabold text-base flex flex-wrap items-center gap-2">
+                      <span>Sumber data:</span>
+                      {liveOn && liveLastOk ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                          <span className="w-2 h-2 rounded-full bg-rose-600" aria-hidden="true" />
+                          Alat Live (USB / Local WebSocket)
+                        </span>
+                      ) : realtimeStatus === 'connected' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          <span className="w-2 h-2 rounded-full bg-emerald-600" aria-hidden="true" />
+                          Supabase Realtime (Cloud WebSocket)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                          <span className="w-2 h-2 rounded-full bg-amber-600" aria-hidden="true" />
+                          Data Cache / Contoh
+                        </span>
+                      )}
+                    </div>
                     {!liveOn ? (
                       <button
                         onClick={handleConnectUsb}
                         disabled={liveConnecting}
-                        className="lift min-h-[52px] px-5 rounded-[10px] text-base font-display font-extrabold tracking-tight flex items-center gap-2 text-white disabled:opacity-60"
-                        style={{ backgroundColor: 'var(--safety)', border: '1.5px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)' }}
+                        className="lift min-h-[52px] px-5 rounded-[10px] text-base font-display font-extrabold tracking-tight flex items-center gap-2 disabled:opacity-60"
+                        style={{
+                          backgroundColor: 'var(--safety)',
+                          color: 'var(--safety-text)',
+                          border: '1.5px solid var(--border-strong)',
+                          boxShadow: 'var(--hard-shadow)',
+                        }}
                       >
-                        {liveConnecting ? 'Menghubungkan…' : '⚡ Hubungkan Alat Realtime'}
+                        <Zap className="w-5 h-5" aria-hidden />
+                        {liveConnecting ? 'Menghubungkan…' : 'Hubungkan Alat Realtime'}
                       </button>
                     ) : (
                       <button
@@ -1108,21 +1144,21 @@ export const SugengDashboard: React.FC = () => {
                     )}
                   </div>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Colok ESP32 via kabel USB ke laptop ini, lalu klik tombol <strong>⚡ Hubungkan Alat Realtime</strong>.
+                    Colok ESP32 via kabel USB ke komputer ini, lalu klik tombol <strong>Hubungkan Alat Realtime</strong>.
                     Sistem otomatis terhubung instan via <strong>Realtime WebSocket (ws://127.0.0.1:5050)</strong> dengan latensi &lt;1ms. Data live menimpa <strong>{LIVE_NODE_ID} (TPS Kampus Tuguran UNTIDAR)</strong> tiap 2 detik.
                   </p>
                   {liveError && (
-                    <p role="alert" className="text-base font-bold" style={{ color: 'var(--critical)' }}>⚠ {liveError}</p>
+                    <p role="alert" className="text-base font-bold flex items-center gap-1.5" style={{ color: 'var(--critical)' }}>
+                      <AlertTriangle className="w-5 h-5 shrink-0" aria-hidden />
+                      {liveError}
+                    </p>
                   )}
                   {liveOn && !liveError && liveLastOk && (
                     <div className="flex items-center gap-2.5 p-3 rounded-lg text-sm font-semibold border" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)', borderColor: 'var(--success)' }}>
-                      <span className="relative flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
-                      </span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" aria-hidden="true" />
                       <span>
-                        ✓ Terhubung Realtime — update data masuk <strong>{liveLastOk}</strong>
-                        {typeof liveRaw?.uptimeSec === 'number' ? ` • Uptime Alat: ${liveRaw.uptimeSec} detik` : ''}
+                        Terhubung realtime: update data masuk <strong>{liveLastOk}</strong>
+                        {typeof liveRaw?.uptimeSec === 'number' ? ` · Uptime Alat: ${liveRaw.uptimeSec} detik` : ''}
                       </span>
                     </div>
                   )}
@@ -1135,12 +1171,9 @@ export const SugengDashboard: React.FC = () => {
                         borderColor: 'var(--success)',
                       }}
                     >
-                      <span className="relative flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
-                      </span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" aria-hidden="true" />
                       <span>
-                        ✓ Terhubung ke <strong>Supabase Realtime Cloud (WebSocket)</strong> — menerima pembaruan sensor secara otomatis.
+                        Terhubung ke <strong>Supabase Realtime Cloud (WebSocket)</strong>: menerima pembaruan sensor secara otomatis.
                         {lastRealtimeUpdate ? ` (Update terakhir: ${lastRealtimeUpdate})` : ''}
                       </span>
                     </div>
@@ -1154,13 +1187,13 @@ export const SugengDashboard: React.FC = () => {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* 1. KARTU VOLUME & JARAK (JSN-SR04T) */}
+                {/* Volume dan jarak (JSN-SR04T) */}
                 {(() => {
                   const vol = selectedNode?.currentVolumePercent ?? 0;
                   const dist = selectedNode?.measuredDistanceCm ?? -1;
                   const volColor = vol >= 80 ? 'var(--critical)' : vol >= 50 ? 'var(--warning)' : 'var(--success)';
                   const volBadgeBg = vol >= 80 ? 'var(--critical-bg)' : vol >= 50 ? 'var(--warning-bg)' : 'var(--success-bg)';
-                  const volStatus = vol >= 80 ? 'Penuh — Prioritas Angkut' : vol >= 50 ? 'Siaga — Setengah Penuh' : 'Normal / Masih Lega';
+                  const volStatus = vol >= 80 ? 'Penuh: Prioritas Angkut' : vol >= 50 ? 'Siaga: Setengah Penuh' : 'Normal / Masih Lega';
                   return (
                     <section aria-label="Kapasitas dan volume sampah" className="reveal card p-5 space-y-4" style={{ ['--d' as string]: '120ms' }}>
                       <div className="flex items-center justify-between">
@@ -1172,7 +1205,7 @@ export const SugengDashboard: React.FC = () => {
                             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                               Sensor Ultrasonik JSN-SR04T
                             </span>
-                            <h3 className="font-display text-lg font-extrabold tracking-tight">VOLUME SAMPAH</h3>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">Volume Sampah</h3>
                           </div>
                         </div>
                         <span
@@ -1208,27 +1241,34 @@ export const SugengDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="p-3 rounded-lg text-sm" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                      <div className="p-3 rounded-lg text-sm flex items-start gap-2" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                        {vol >= 80 ? (
+                          <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
+                        ) : vol >= 50 ? (
+                          <AlertCircle className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" aria-hidden="true" />
+                        ) : (
+                          <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" aria-hidden="true" />
+                        )}
                         <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
                           {vol >= 80
-                            ? '🚨 Bak hampir luber! Masuk antrean prioritas rute pengangkutan DLH.'
+                            ? 'Bak hampir luber. Masuk antrean prioritas rute pengangkutan DLH.'
                             : vol >= 50
-                              ? '⚠️ Bak terisi setengah lebih — pantau sebelum jam sibuk warga.'
-                              : '✅ Bak masih longgar — belum membutuhkan penjemputan armada.'}
+                              ? 'Bak terisi lebih dari setengah. Pantau sebelum jam sibuk warga.'
+                              : 'Bak masih longgar. Belum membutuhkan penjemputan armada.'}
                         </p>
                       </div>
 
                       <details className="text-xs card-inset p-2.5">
                         <summary className="font-bold cursor-pointer min-h-[36px] flex items-center">Detail Teknis Kalibrasi Ultrasonik</summary>
                         <p className="mt-1.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
-                          Jarak pantul: <strong>{dist > 0 ? `${dist} cm` : 'Sensor Tertutup / Out of Range'}</strong> • Tinggi bak total: {selectedNode?.totalHeightCm ?? 95} cm • Batas buta (blind zone): {selectedNode?.blindZoneCm ?? 20} cm.
+                          Jarak pantul: <strong>{dist > 0 ? `${dist} cm` : 'Sensor Tertutup / Out of Range'}</strong> · Tinggi bak total: {selectedNode?.totalHeightCm ?? 95} cm · Batas buta (blind zone): {selectedNode?.blindZoneCm ?? 20} cm.
                         </p>
                       </details>
                     </section>
                   );
                 })()}
 
-                {/* 2. KARTU SUHU & KELEMBAPAN (DHT22) */}
+                {/* Suhu dan kelembapan (DHT22) */}
                 {(() => {
                   const temp = selectedNode?.temperatureCelsius ?? 0;
                   const hum = selectedNode?.humidityPercent ?? 0;
@@ -1246,7 +1286,7 @@ export const SugengDashboard: React.FC = () => {
                             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                               Sensor Lingkungan DHT22
                             </span>
-                            <h3 className="font-display text-lg font-extrabold tracking-tight">SUHU & KELEMBAPAN</h3>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">Suhu dan Kelembapan</h3>
                           </div>
                         </div>
                         <span
@@ -1302,7 +1342,7 @@ export const SugengDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Mikroiklim note */}
+                      {/* Analisis mikroiklim */}
                       <div className="p-2.5 rounded-lg text-xs" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
                         <p style={{ color: 'var(--text-secondary)' }}>
                           <strong>Analisis Dekomposisi: </strong>
@@ -1315,14 +1355,14 @@ export const SugengDashboard: React.FC = () => {
                       <details className="text-xs card-inset p-2.5">
                         <summary className="font-bold cursor-pointer min-h-[36px] flex items-center">Detail Pinout & Kalibrasi DHT22</summary>
                         <p className="mt-1.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
-                          GPIO Pin: D19 • Rentang operasi: -40 s/d 80°C (akurasi ±0.5°C), 0–100% RH (akurasi ±2%).
+                          GPIO Pin: D19 · Rentang operasi: -40 s/d 80°C (akurasi ±0.5°C), 0-100% RH (akurasi ±2%).
                         </p>
                       </details>
                     </section>
                   );
                 })()}
 
-                {/* 3. KARTU GAS AMONIA & BAU BUSUK (MQ-135) */}
+                {/* Gas amonia & bau busuk (MQ-135) */}
                 {(() => {
                   const nh3 = selectedNode?.gasPpmMQ135 ?? 0;
                   const nh3Info = getAmmoniaInfo(nh3);
@@ -1337,7 +1377,7 @@ export const SugengDashboard: React.FC = () => {
                             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                               Sensor Gas MQ-135 (NH₃ / Organik)
                             </span>
-                            <h3 className="font-display text-lg font-extrabold tracking-tight">GAS AMONIA (BAU BUSUK)</h3>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">Gas Amonia (Uji Bau Busuk)</h3>
                           </div>
                         </div>
                         <span
@@ -1382,14 +1422,14 @@ export const SugengDashboard: React.FC = () => {
                       <details className="text-xs card-inset p-2.5">
                         <summary className="font-bold cursor-pointer min-h-[36px] flex items-center">Detail Kalibrasi Sensor MQ-135</summary>
                         <p className="mt-1.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
-                          Pin Analog: GPIO 34 (ADC1) • ADC Terbaca: {liveRaw?.mq135Adc ?? '—'} (12-bit / 0–4095) • Skala Demo: {liveRaw?.mq135Pct ?? '—'}% ADC • Target Deteksi: Gas NH₃ (Amonia), Alkohol, Sulfida dari sampah basah.
+                          Pin Analog: GPIO 34 (ADC1) · ADC Terbaca: {liveRaw?.mq135Adc ?? '-'} (12-bit / 0-4095) · Skala Demo: {liveRaw?.mq135Pct ?? '-'}% ADC · Target Deteksi: Gas NH₃ (Amonia), Alkohol, Sulfida dari sampah basah.
                         </p>
                       </details>
                     </section>
                   );
                 })()}
 
-                {/* 4. KARTU GAS METANA & RISIKO API (MQ-4) */}
+                {/* Gas metana & risiko api (MQ-4) */}
                 {(() => {
                   const ch4 = selectedNode?.methanePpmMQ4 ?? 0;
                   const ch4Info = getMethaneInfo(ch4);
@@ -1404,7 +1444,7 @@ export const SugengDashboard: React.FC = () => {
                             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                               Sensor Gas MQ-4 (CH₄ / Biometana)
                             </span>
-                            <h3 className="font-display text-lg font-extrabold tracking-tight">GAS METANA (RISIKO API)</h3>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">Gas Metana (Risiko Api)</h3>
                           </div>
                         </div>
                         <span
@@ -1449,14 +1489,14 @@ export const SugengDashboard: React.FC = () => {
                       <details className="text-xs card-inset p-2.5">
                         <summary className="font-bold cursor-pointer min-h-[36px] flex items-center">Detail Kalibrasi Sensor MQ-4</summary>
                         <p className="mt-1.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
-                          Pin Analog: GPIO 35 (ADC1) • ADC Terbaca: {liveRaw?.mq4Adc ?? '—'} (12-bit / 0–4095) • Skala Demo: {liveRaw?.mq4Pct ?? '—'}% ADC • Ambang Bahaya LEL (Lower Explosive Limit) Gas Rawa/Biometana.
+                          Pin Analog: GPIO 35 (ADC1) · ADC Terbaca: {liveRaw?.mq4Adc ?? '-'} (12-bit / 0-4095) · Skala Demo: {liveRaw?.mq4Pct ?? '-'}% ADC · Ambang Bahaya LEL (Lower Explosive Limit) Gas Rawa/Biometana.
                         </p>
                       </details>
                     </section>
                   );
                 })()}
 
-                {/* 5. KARTU SUPLAI DAYA & PANEL SURYA (FULL WIDTH) */}
+                {/* Suplai daya & panel surya */}
                 {(() => {
                   const battVolt = selectedNode?.batteryVoltage ?? 0;
                   const battPct = selectedNode?.batteryPercent ?? 0;
@@ -1475,7 +1515,7 @@ export const SugengDashboard: React.FC = () => {
                             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                               Power Management System (IoT Standalone)
                             </span>
-                            <h3 className="font-display text-lg font-extrabold tracking-tight">DAYA BATERAI & PANEL SURYA</h3>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">Daya Baterai & Panel Surya</h3>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1564,7 +1604,7 @@ export const SugengDashboard: React.FC = () => {
                 >
                   {nodes.map((n) => (
                     <option key={n.id} value={n.id}>
-                      {n.name} — {n.currentVolumePercent}%
+                      {n.name}: {n.currentVolumePercent}%
                     </option>
                   ))}
                 </select>
@@ -1585,7 +1625,7 @@ export const SugengDashboard: React.FC = () => {
           className="border-t py-4 px-4 text-center text-sm font-semibold"
           style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-strong)', borderTopWidth: 2, color: 'var(--text-secondary)' }}
         >
-          <span className="font-display font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>SUGENG</span> — Sistem Cerdas Angkut Sampah Kota Magelang • Dinas Lingkungan Hidup • Data diperbarui otomatis
+          <span className="font-display font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>SUGENG</span>: Sistem Cerdas Angkut Sampah Kota Magelang. Dinas Lingkungan Hidup Kota Magelang. Data diperbarui otomatis.
         </footer>
       </div>
     </div>
