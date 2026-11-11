@@ -88,11 +88,26 @@ export function mapDbNodeToUiNode(dbNode: DbTpsNode, existingNode?: TPSNode): TP
       })
     : 'Baru saja';
 
+  const nodeName =
+    dbNode.node_id === 'NODE-MGL-05'
+      ? 'TPS Kampus Tuguran UNTIDAR'
+      : (existingNode?.name || dbNode.name);
+
+  const nodeAddress =
+    dbNode.node_id === 'NODE-MGL-05'
+      ? 'Jl. Kapten Suparman No.39, Tuguran, Magelang Utara'
+      : (existingNode?.address || dbNode.address || 'Kota Magelang');
+
+  const nodeCoords: [number, number] =
+    dbNode.node_id === 'NODE-MGL-05'
+      ? [-7.4642, 110.2291]
+      : (existingNode?.coordinates || [dbNode.latitude, dbNode.longitude]);
+
   return {
     id: dbNode.node_id,
-    name: dbNode.name,
-    address: dbNode.address || existingNode?.address || 'Kota Magelang',
-    coordinates: [dbNode.latitude, dbNode.longitude],
+    name: nodeName,
+    address: nodeAddress,
+    coordinates: nodeCoords,
     capacityLiters: Number(dbNode.capacity_liters || existingNode?.capacityLiters || 120),
     currentVolumePercent: Math.round(vol * 10) / 10,
     measuredDistanceCm: existingNode?.measuredDistanceCm ?? estimatedDist,
