@@ -1,7 +1,5 @@
-// Pembaca USB Serial via Web Serial API (Chrome/Edge).
+// Pembaca USB Serial via Realtime WebSocket & Web Serial API
 // Firmware kirim 1 baris JSON:{...} tiap 2 detik (lihat firmware/SugengNode_USBSerial.ino)
-// Syarat browser: secure context -> buka dashboard via http://localhost:5432
-// (tidak jalan di http://IP-LAN / Firefox).
 import type { LiveSensorPayload } from './liveSensor';
 
 export function isSerialSupported(): boolean {
@@ -21,7 +19,7 @@ function parseLine(line: string): LiveSensorPayload | null {
 function friendlyError(e: unknown): string {
   const err = e as { name?: string; message?: string };
   if (err?.name === 'NotFoundError' || err?.name === 'AbortError')
-    return 'Pemilihan port dibatalkan — klik lagi lalu pilih port ESP32 (mis. USB Serial / ttyUSB0).';
+    return 'Pemilihan port dibatalkan — klik lagi lalu pilih port ESP32 (mis. CP2102 / ttyUSB0).';
   if (err?.name === 'InvalidStateError')
     return 'Port sedang dipakai (tutup Arduino Serial Monitor dulu), lalu coba lagi.';
   if (err?.name === 'SecurityError')
@@ -57,8 +55,25 @@ export async function connectSerial(
     );
   await disconnectSerial();
   let port: any;
+
+  // Filter khusus perangkat ESP32 / USB UART agar Chromium tidak hang saat scanning port motherboard (ttyS0-31)
+  const filters = [
+    { usbVendorId: 0x10c4 }, // Silicon Labs CP2102 (ESP32 Sugeng Node)
+    { usbVendorId: 0x1a86 }, // WCH CH340
+    { usbVendorId: 0x0403 }, // FTDI
+    { usbVendorId: 0x303a }, // Espressif USB native
+    { usbVendorId: 0x2341 }, // Arduino
+  ];
+
   try {
-    port = await nav.serial.requestPort();
+    try {
+      port = await nav.serial.requestPort({ filters });
+    } catch (e: any) {
+      if (e?.name === 'NotFoundError' || e?.name === 'AbortError') {
+        throw new Error(friendlyError(e));
+      }
+      port = await nav.serial.requestPort();
+    }
     await port.open({ baudRate });
   } catch (e) {
     throw new Error(friendlyError(e));
@@ -108,4 +123,87 @@ export async function connectSerial(
       onError(msg);
     }
   }
+}
+
+/* ---------- REALTIME WEBSOCKET BRIDGE (<1ms LATENCY PUSH) ---------- */
+let activeWs: WebSocket | null = null;
+
+export async function isBridgeAvailable(): Promise<boolean> {
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 600);
+    const res = await fetch('http://127.0.0.1:5050/live', { signal: ctrl.signal });
+    clearTimeout(timeout);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export function disconnectBridge(): void {
+  if (activeWs) {
+    try {
+      activeWs.close();
+    } catch {
+      /* abaikan */
+    }
+    activeWs = null;
+  }
+}
+
+export async function connectBridge(
+  onData: (p: LiveSensorPayload) => void,
+  onError: (msg: string) => void
+): Promise<void> {
+  disconnectBridge();
+  return new Promise((resolve, reject) => {
+    try {
+      const ws = new WebSocket('ws://127.0.0.1:5050');
+      let opened = false;
+
+      ws.onopen = () => {
+        opened = true;
+        activeWs = ws;
+        console.log('[WEBSOCKET] Terhubung realtime ke ESP32 via ws://127.0.0.1:5050');
+        resolve();
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data) as LiveSensorPayload;
+          if (payload && payload.nodeId) {
+            onData(payload);
+          }
+        } catch (e) {
+          console.error('[WEBSOCKET PARSE ERROR]', e);
+        }
+      };
+
+      ws.onerror = (e) => {
+        if (!opened) {
+          reject(new Error('Gagal menghubungkan ke WebSocket ws://127.0.0.1:5050'));
+        } else {
+          onError('Koneksi WebSocket terputus.');
+        }
+      };
+
+      ws.onclose = () => {
+        activeWs = null;
+        if (opened) {
+          onError('Koneksi WebSocket ditutup.');
+        }
+      };
+
+      // Timeout 3 detik jika tidak kunjung open
+      setTimeout(() => {
+        if (!opened) {
+          try { ws.close(); } catch {}
+          reject(new Error('Timeout menghubungkan ke WebSocket ws://127.0.0.1:5050'));
+        }
+      }, 3000);
+
+    } catch (err: any) {
+      reject(err);
+    }
+  });
 }

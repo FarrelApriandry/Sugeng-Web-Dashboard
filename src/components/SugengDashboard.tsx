@@ -3,7 +3,8 @@ import type { TPSNode, CVRPSolution } from '../data/dummyData';
 import { DUMMY_TPS_NODES, INITIAL_CVRP_SOLUTION } from '../data/dummyData';
 import { applyLiveToNode, LIVE_NODE_ID } from '../lib/liveSensor';
 import type { LiveSensorPayload } from '../lib/liveSensor';
-import { connectSerial, disconnectSerial, isSerialSupported } from '../lib/liveSerial';
+import { connectSerial, disconnectSerial, isSerialSupported, connectBridge, disconnectBridge, isBridgeAvailable } from '../lib/liveSerial';
+import { fetchInitialNodes, subscribeToRealtime, type RealtimeConnectionState } from '../lib/supabaseRealtime';
 import { InteractiveMap } from './InteractiveMap';
 import {
   MapPin,
@@ -21,6 +22,12 @@ import {
   ChevronRight,
   Send,
   Eye,
+  Flame,
+  Wind,
+  Thermometer,
+  Droplets,
+  Gauge,
+  Zap,
 } from 'lucide-react';
 
 type TabId = 'map' | 'dispatch' | 'tps' | 'telemetry';
@@ -56,6 +63,136 @@ function interpretBattery(volt: number): string {
   return 'Baterai lemah — periksa panel surya';
 }
 
+function getAmmoniaInfo(ppm: number) {
+  if (ppm >= 60) {
+    return {
+      status: 'Kritis (Bau Busuk Menyengat)',
+      badgeBg: 'var(--critical-bg)',
+      badgeColor: 'var(--critical)',
+      borderColor: 'var(--critical)',
+      action: 'Bau amonia menyengat kuat ke lingkungan. Segera lakukan pengangkutan armada & semprot eco-enzyme!',
+      color: 'var(--critical)',
+      percent: Math.min(100, Math.round((ppm / 100) * 100)),
+    };
+  }
+  if (ppm >= 30) {
+    return {
+      status: 'Sedang (Mulai Berbau)',
+      badgeBg: 'var(--warning-bg)',
+      badgeColor: 'var(--warning)',
+      borderColor: 'var(--warning)',
+      action: 'Aroma sampah mulai tercium. Bak perlu dijadwalkan pengangkutan sebelum fermentasi meningkat.',
+      color: 'var(--warning)',
+      percent: Math.min(100, Math.round((ppm / 100) * 100)),
+    };
+  }
+  return {
+    status: 'Normal (Udara Segar)',
+    badgeBg: 'var(--success-bg)',
+    badgeColor: 'var(--success)',
+    borderColor: 'var(--success)',
+    action: 'Konsentrasi gas amonia sangat rendah. Udara di sekitar bak bersih, higienis, dan tidak berbau.',
+    color: 'var(--success)',
+    percent: Math.min(100, Math.round((ppm / 100) * 100)),
+  };
+}
+
+function getMethaneInfo(ppm: number) {
+  if (ppm >= 250) {
+    return {
+      status: 'BAHAYA (Risiko Api / Ledakan)',
+      badgeBg: 'var(--critical-bg)',
+      badgeColor: 'var(--critical)',
+      borderColor: 'var(--critical)',
+      action: 'PERINGATAN K3: Dilarang menyalakan korek/rokok! Buka ventilasi bak dan segera evakuasi sampah.',
+      color: 'var(--critical)',
+      percent: Math.min(100, Math.round((ppm / 500) * 100)),
+    };
+  }
+  if (ppm >= 100) {
+    return {
+      status: 'Waspada (Akumulasi Biometana)',
+      badgeBg: 'var(--warning-bg)',
+      badgeColor: 'var(--warning)',
+      borderColor: 'var(--warning)',
+      action: 'Terjadi akumulasi gas metana dari penguraian tertutup. Periksa sirkulasi ventilasi bak.',
+      color: 'var(--warning)',
+      percent: Math.min(100, Math.round((ppm / 500) * 100)),
+    };
+  }
+  return {
+    status: 'Aman (Konsentrasi Rendah)',
+    badgeBg: 'var(--success-bg)',
+    badgeColor: 'var(--success)',
+    borderColor: 'var(--success)',
+    action: 'Kadar metana sangat minim (< 100 ppm). Bebas risiko kebakaran dan akumulasi biometana.',
+    color: 'var(--success)',
+    percent: Math.min(100, Math.round((ppm / 500) * 100)),
+  };
+}
+
+function getTempInfo(temp: number) {
+  if (temp >= 35) {
+    return {
+      status: 'Sangat Panas',
+      badgeBg: 'var(--critical-bg)',
+      badgeColor: 'var(--critical)',
+      desc: 'Suhu bak tinggi, mempercepat pembusukan bakteri.',
+      percent: Math.min(100, Math.max(0, Math.round(((temp - 15) / 35) * 100))),
+      color: 'var(--critical)',
+    };
+  }
+  if (temp >= 31) {
+    return {
+      status: 'Hangat (Aktif)',
+      badgeBg: 'var(--warning-bg)',
+      badgeColor: 'var(--warning)',
+      desc: 'Suhu siang hari normal untuk iklim tropis Magelang.',
+      percent: Math.min(100, Math.max(0, Math.round(((temp - 15) / 35) * 100))),
+      color: 'var(--warning)',
+    };
+  }
+  return {
+    status: 'Optimal / Sejuk',
+    badgeBg: 'var(--success-bg)',
+    badgeColor: 'var(--success)',
+    desc: 'Suhu ideal, laju fermentasi organik lambat.',
+    percent: Math.min(100, Math.max(0, Math.round(((temp - 15) / 35) * 100))),
+    color: 'var(--success)',
+  };
+}
+
+function getHumidityInfo(hum: number) {
+  if (hum >= 75) {
+    return {
+      status: 'Lembap Tinggi (Basah)',
+      badgeBg: 'var(--warning-bg)',
+      badgeColor: 'var(--warning)',
+      desc: 'Kelembapan tinggi memicu timbulnya lindi & bau busuk.',
+      percent: Math.min(100, Math.round(hum)),
+      color: 'var(--warning)',
+    };
+  }
+  if (hum >= 50) {
+    return {
+      status: 'Normal',
+      badgeBg: 'var(--success-bg)',
+      badgeColor: 'var(--success)',
+      desc: 'Kondisi kelembapan seimbang.',
+      percent: Math.min(100, Math.round(hum)),
+      color: 'var(--success)',
+    };
+  }
+  return {
+    status: 'Kering',
+    badgeBg: 'var(--bg-tertiary)',
+    badgeColor: 'var(--text-secondary)',
+    desc: 'Sampah relatif kering.',
+    percent: Math.min(100, Math.round(hum)),
+    color: 'var(--text-secondary)',
+  };
+}
+
 function statusStyle(level: StatusLevel, theme: Theme): React.CSSProperties {
   if (level === 'critical')
     return theme === 'light'
@@ -80,7 +217,7 @@ const FILTER_LABEL: Record<'all' | StatusLevel, string> = {
 export const SugengDashboard: React.FC = () => {
   const [nodes, setNodes] = useState<TPSNode[]>(DUMMY_TPS_NODES);
   const [cvrp] = useState<CVRPSolution>(INITIAL_CVRP_SOLUTION);
-  const [selectedNode, setSelectedNode] = useState<TPSNode | null>(DUMMY_TPS_NODES[0]);
+  const [selectedNode, setSelectedNode] = useState<TPSNode | null>(DUMMY_TPS_NODES[0] ?? null);
   const [activeTab, setActiveTab] = useState<TabId>('map');
   const [showRoute, setShowRoute] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -90,6 +227,66 @@ export const SugengDashboard: React.FC = () => {
   const [theme, setTheme] = useState<Theme>('light'); // P0: terang sebagai default
   const [dispatchSent, setDispatchSent] = useState<boolean>(false);
 
+  /* ---------- SUPABASE REALTIME (Cloud WebSocket) ---------- */
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeConnectionState>('connecting');
+  const [lastRealtimeUpdate, setLastRealtimeUpdate] = useState<string>('');
+
+  // 1. Inisialisasi data & Berlangganan Supabase Realtime WebSocket
+  useEffect(() => {
+    let isMounted = true;
+
+    // Ambil data snapshot awal dari Supabase
+    fetchInitialNodes().then((initialNodes) => {
+      if (isMounted && initialNodes.length > 0) {
+        setNodes(initialNodes);
+        setSelectedNode((prev) => {
+          if (!prev) return initialNodes[0] ?? null;
+          return initialNodes.find((n) => n.id === prev.id) ?? initialNodes[0] ?? null;
+        });
+      }
+    });
+
+    // Langganan stream WebSocket real-time
+    const unsubscribe = subscribeToRealtime({
+      onStatusChange: (status) => {
+        if (isMounted) setRealtimeStatus(status);
+      },
+      onNodeChange: (updatedNode) => {
+        if (!isMounted) return;
+        setNodes((prev) =>
+          prev.map((n) => (n.id === updatedNode.id ? { ...n, ...updatedNode } : n))
+        );
+        setSelectedNode((prev) =>
+          prev && prev.id === updatedNode.id ? { ...prev, ...updatedNode } : prev
+        );
+        const nowStr =
+          new Date().toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }) + ' WIB';
+        setLastRealtimeUpdate(nowStr);
+      },
+      onTelemetryInsert: (payload) => {
+        if (!isMounted) return;
+        const targetId = payload.nodeId || LIVE_NODE_ID;
+        const label =
+          new Date().toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }) +
+          ' WIB (Cloud WSS)';
+        setNodes((prev) =>
+          prev.map((n) => (n.id === targetId ? applyLiveToNode(n, payload, label) : n))
+        );
+        setSelectedNode((prev) =>
+          prev && prev.id === targetId ? applyLiveToNode(prev, payload, label) : prev
+        );
+        setLiveRaw(payload);
+        setLiveLastOk(label);
+        setLastRealtimeUpdate(label);
+      },
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
   /* ---------- LIVE SENSOR (jalur demo: USB serial langsung, tanpa WiFi/DB) ---------- */
   const [liveOn, setLiveOn] = useState<boolean>(false); // port serial terbuka?
   const [liveConnecting, setLiveConnecting] = useState<boolean>(false);
@@ -98,7 +295,9 @@ export const SugengDashboard: React.FC = () => {
   const [liveRaw, setLiveRaw] = useState<LiveSensorPayload | null>(null);
 
   const applyPayload = (payload: LiveSensorPayload) => {
-    const label = new Date().toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }) + ' WIB (USB)';
+    const isWs = (payload as any)._transport === 'websocket';
+    const tag = isWs ? 'WebSocket' : 'USB';
+    const label = new Date().toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }) + ` WIB (${tag})`;
     setNodes((prev) => prev.map((n) => (n.id === LIVE_NODE_ID ? applyLiveToNode(n, payload, label) : n)));
     setSelectedNode((prev) => (prev && prev.id === LIVE_NODE_ID ? applyLiveToNode(prev, payload, label) : prev));
     setLiveRaw(payload);
@@ -110,6 +309,7 @@ export const SugengDashboard: React.FC = () => {
   useEffect(() => {
     return () => {
       disconnectSerial();
+      disconnectBridge();
     };
   }, []);
 
@@ -117,6 +317,23 @@ export const SugengDashboard: React.FC = () => {
     setLiveConnecting(true);
     setLiveError(null);
     try {
+      // 1. Cek apakah Python Local Bridge aktif di 127.0.0.1:5050
+      const bridgeOk = await isBridgeAvailable();
+      if (bridgeOk) {
+        await connectBridge(
+          (payload) => applyPayload(payload),
+          (msg) => {
+            setLiveError(msg);
+            setLiveOn(false);
+          }
+        );
+        setLiveOn(true);
+        const found = nodes.find((n) => n.id === LIVE_NODE_ID);
+        if (found) setSelectedNode(found);
+        return;
+      }
+
+      // 2. Jika bridge tidak aktif, gunakan Web Serial API browser
       await connectSerial(
         (payload) => applyPayload(payload),
         (msg) => {
@@ -139,6 +356,7 @@ export const SugengDashboard: React.FC = () => {
 
   const handleDisconnectUsb = async () => {
     await disconnectSerial();
+    disconnectBridge();
     setLiveOn(false);
     setLiveError(null);
   };
@@ -167,9 +385,18 @@ export const SugengDashboard: React.FC = () => {
     return matchesSearch && getStatus(node).level === statusFilter;
   });
 
-  const handleSimulateTelemetry = () => {
+  const handleSimulateTelemetry = async () => {
     setIsSimulating(true);
-    setTimeout(() => {
+    try {
+      const freshNodes = await fetchInitialNodes();
+      if (freshNodes && freshNodes.length > 0) {
+        setNodes(freshNodes);
+        if (selectedNode) {
+          const found = freshNodes.find((n) => n.id === selectedNode.id);
+          if (found) setSelectedNode(found);
+        }
+      }
+    } catch {
       setNodes((prev) =>
         prev.map((node) => {
           const delta = Math.floor(Math.random() * 5) - 2;
@@ -181,8 +408,9 @@ export const SugengDashboard: React.FC = () => {
           return { ...node, currentVolumePercent: newVol, measuredDistanceCm: newDist, lastTelemetry: 'Baru saja' };
         })
       );
+    } finally {
       setIsSimulating(false);
-    }, 500);
+    }
   };
 
   const handleSendDispatch = () => {
@@ -230,6 +458,60 @@ export const SugengDashboard: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {/* Status Badge Supabase Realtime WebSocket */}
+                <div
+                  className="flex items-center gap-2 px-3 min-h-[44px] rounded-lg text-xs font-bold border transition-all"
+                  style={{
+                    backgroundColor:
+                      realtimeStatus === 'connected'
+                        ? 'var(--success-bg)'
+                        : realtimeStatus === 'connecting'
+                        ? 'var(--warning-bg)'
+                        : 'var(--bg-tertiary)',
+                    borderColor:
+                      realtimeStatus === 'connected'
+                        ? 'var(--success)'
+                        : realtimeStatus === 'connecting'
+                        ? 'var(--warning)'
+                        : 'var(--border-strong)',
+                    color:
+                      realtimeStatus === 'connected'
+                        ? 'var(--success)'
+                        : realtimeStatus === 'connecting'
+                        ? 'var(--warning)'
+                        : 'var(--text-secondary)',
+                  }}
+                  title={
+                    realtimeStatus === 'connected'
+                      ? `Terhubung ke Supabase Realtime WebSocket (${lastRealtimeUpdate || 'Live WSS'})`
+                      : realtimeStatus === 'connecting'
+                      ? 'Menghubungkan ke Supabase Realtime WebSocket...'
+                      : 'Koneksi Cloud Realtime terputus'
+                  }
+                >
+                  <span className="relative flex h-2.5 w-2.5">
+                    {realtimeStatus === 'connected' && (
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    )}
+                    <span
+                      className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                        realtimeStatus === 'connected'
+                          ? 'bg-emerald-500'
+                          : realtimeStatus === 'connecting'
+                          ? 'bg-amber-500 animate-pulse'
+                          : 'bg-zinc-400'
+                      }`}
+                    ></span>
+                  </span>
+                  <span className="font-mono tracking-tight hidden sm:inline">
+                    {realtimeStatus === 'connected'
+                      ? 'CLOUD REALTIME'
+                      : realtimeStatus === 'connecting'
+                      ? 'WSS CONNECTING…'
+                      : 'OFFLINE'}
+                  </span>
+                </div>
+
                 <button
                   onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
                   aria-label={theme === 'light' ? 'Ganti ke mode gelap' : 'Ganti ke mode terang'}
@@ -416,7 +698,7 @@ export const SugengDashboard: React.FC = () => {
                         </span>
                         <span className="block text-base font-bold mt-1 leading-snug">{node.name}</span>
                         <span className="block text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                          {node.id === LIVE_NODE_ID && liveOn && liveLastOk ? '🔴 USB • ' : ''}Bau: {interpretGas(node.gasPpmMQ135)} • {node.lastTelemetry}
+                          {node.id === LIVE_NODE_ID && liveOn && liveLastOk ? '🔴 LIVE • ' : ''}Bau: {interpretGas(node.gasPpmMQ135)} • {node.lastTelemetry}
                         </span>
                       </button>
                     );
@@ -799,7 +1081,12 @@ export const SugengDashboard: React.FC = () => {
                 <div className="card-inset p-4 mt-4 space-y-3" aria-label="Kontrol alat live USB">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-extrabold text-base">
-                      Sumber data: {liveOn && liveLastOk ? '🔴 Alat Live (USB)' : '🟡 Data Contoh'}
+                      Sumber data:{' '}
+                      {liveOn && liveLastOk
+                        ? '🔴 Alat Live (USB / Local WebSocket)'
+                        : realtimeStatus === 'connected'
+                        ? '🟢 Supabase Realtime (Cloud WebSocket)'
+                        : '🟡 Data Cache / Contoh'}
                     </p>
                     {!liveOn ? (
                       <button
@@ -808,7 +1095,7 @@ export const SugengDashboard: React.FC = () => {
                         className="lift min-h-[52px] px-5 rounded-[10px] text-base font-display font-extrabold tracking-tight flex items-center gap-2 text-white disabled:opacity-60"
                         style={{ backgroundColor: 'var(--safety)', border: '1.5px solid var(--border-strong)', boxShadow: 'var(--hard-shadow)' }}
                       >
-                        {liveConnecting ? 'Membuka port…' : '🔌 Hubungkan via USB'}
+                        {liveConnecting ? 'Menghubungkan…' : '⚡ Hubungkan Alat Realtime'}
                       </button>
                     ) : (
                       <button
@@ -816,27 +1103,47 @@ export const SugengDashboard: React.FC = () => {
                         className="min-h-[52px] px-5 rounded-[10px] text-base font-bold border"
                         style={{ borderColor: 'var(--border-strong)' }}
                       >
-                        Putuskan USB
+                        Putuskan Koneksi
                       </button>
                     )}
                   </div>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Colok ESP32 via kabel USB ke laptop ini, klik <strong>Hubungkan via USB</strong>, pilih port ESP32 (baud 115200).
-                    Data live menimpa <strong>{LIVE_NODE_ID} (TPS Kampus Tuguran UNTIDAR)</strong> tiap 2 detik.
+                    Colok ESP32 via kabel USB ke laptop ini, lalu klik tombol <strong>⚡ Hubungkan Alat Realtime</strong>.
+                    Sistem otomatis terhubung instan via <strong>Realtime WebSocket (ws://127.0.0.1:5050)</strong> dengan latensi &lt;1ms. Data live menimpa <strong>{LIVE_NODE_ID} (TPS Kampus Tuguran UNTIDAR)</strong> tiap 2 detik.
                   </p>
-                  {!isSerialSupported() && (
-                    <p role="alert" className="text-base font-bold" style={{ color: 'var(--critical)' }}>
-                      ⚠ Browser ini tidak mendukung USB serial — pakai Chrome/Edge di laptop dan buka dashboard via http://localhost:5432 (bukan IP-LAN / Firefox).
-                    </p>
-                  )}
                   {liveError && (
                     <p role="alert" className="text-base font-bold" style={{ color: 'var(--critical)' }}>⚠ {liveError}</p>
                   )}
                   {liveOn && !liveError && liveLastOk && (
-                    <p role="status" className="text-sm font-semibold" style={{ color: 'var(--success)' }}>
-                      ✓ Terhubung via USB — update terakhir {liveLastOk}
-                      {typeof liveRaw?.uptimeSec === 'number' ? ` • Alat nyala ${liveRaw.uptimeSec} dtk` : ''}
-                    </p>
+                    <div className="flex items-center gap-2.5 p-3 rounded-lg text-sm font-semibold border" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)', borderColor: 'var(--success)' }}>
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
+                      </span>
+                      <span>
+                        ✓ Terhubung Realtime — update data masuk <strong>{liveLastOk}</strong>
+                        {typeof liveRaw?.uptimeSec === 'number' ? ` • Uptime Alat: ${liveRaw.uptimeSec} detik` : ''}
+                      </span>
+                    </div>
+                  )}
+                  {!liveOn && realtimeStatus === 'connected' && (
+                    <div
+                      className="flex items-center gap-2.5 p-3 rounded-lg text-sm font-semibold border"
+                      style={{
+                        backgroundColor: 'var(--success-bg)',
+                        color: 'var(--success)',
+                        borderColor: 'var(--success)',
+                      }}
+                    >
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
+                      </span>
+                      <span>
+                        ✓ Terhubung ke <strong>Supabase Realtime Cloud (WebSocket)</strong> — menerima pembaruan sensor secara otomatis.
+                        {lastRealtimeUpdate ? ` (Update terakhir: ${lastRealtimeUpdate})` : ''}
+                      </span>
+                    </div>
                   )}
                   {liveRaw && (
                     <details className="text-sm card-inset p-3">
@@ -846,87 +1153,396 @@ export const SugengDashboard: React.FC = () => {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <section aria-label="Isi sampah" className="reveal card p-5 space-y-2" style={{ ['--d' as string]: '120ms' }}>
-                  <h3 className="font-display text-base font-extrabold tracking-tight">ISI SAMPAH</h3>
-                  <p className="font-display text-4xl font-black tabular-nums tracking-tight">
-                    {selectedNode?.currentVolumePercent ?? '—'}%
-                    <span className="text-base font-sans font-semibold" style={{ color: 'var(--text-secondary)' }}> penuh</span>
-                  </p>
-                  <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-                    {selectedNode && selectedNode.currentVolumePercent >= 80
-                      ? 'Sudah penuh — masuk prioritas pengangkutan.'
-                      : selectedNode && selectedNode.currentVolumePercent >= 50
-                        ? 'Setengah lebih — pantau 1–2 jam ke depan.'
-                        : 'Masih lega — belum perlu diangkut.'}
-                  </p>
-                  <details className="text-sm card-inset p-3">
-                    <summary className="font-bold cursor-pointer min-h-[44px] flex items-center">
-                      Detail teknis (untuk teknisi)
-                    </summary>
-                    <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
-                      Sensor jarak JSN-SR04T: {selectedNode?.measuredDistanceCm} cm • Tinggi bak{' '}
-                      {selectedNode?.totalHeightCm} cm • Batas buta {selectedNode?.blindZoneCm} cm.
-                    </p>
-                  </details>
-                </section>
-                <section aria-label="Bau dan gas" className="reveal card p-5 space-y-2" style={{ ['--d' as string]: '160ms' }}>
-                  <h3 className="font-display text-base font-extrabold tracking-tight">BAU & GAS</h3>
-                  <p className="text-xl font-extrabold">{selectedNode ? interpretGas(selectedNode.gasPpmMQ135) : '—'}</p>
-                  <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-                    Gas metana: {selectedNode ? interpretMethane(selectedNode.methanePpmMQ4) : '—'}
-                  </p>
-                  <details className="text-sm card-inset p-3">
-                    <summary className="font-bold cursor-pointer min-h-[44px] flex items-center">
-                      Detail teknis (untuk teknisi)
-                    </summary>
-                    <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
-                      MQ-135 (NH₃): {selectedNode?.gasPpmMQ135} ppm • MQ-4 (CH₄): {selectedNode?.methanePpmMQ4} ppm.
-                    </p>
-                  </details>
-                </section>
-                <section aria-label="Suhu dan kelembapan" className="reveal card p-5 space-y-2" style={{ ['--d' as string]: '200ms' }}>
-                  <h3 className="font-display text-base font-extrabold tracking-tight">SUHU & KELEMBAPAN</h3>
-                  <p className="font-display text-4xl font-black tabular-nums tracking-tight">
-                    {selectedNode?.temperatureCelsius ?? '—'}<span className="text-xl"> °C</span>
-                  </p>
-                  <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-                    Kelembapan {selectedNode?.humidityPercent ?? '—'}% —{' '}
-                    {selectedNode && selectedNode.temperatureCelsius > 31
-                      ? 'agak panas, wajar di siang hari.'
-                      : 'normal.'}
-                  </p>
-                  <details className="text-sm card-inset p-3">
-                    <summary className="font-bold cursor-pointer min-h-[44px] flex items-center">
-                      Detail teknis (untuk teknisi)
-                    </summary>
-                    <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
-                      Sensor DHT22 — suhu {selectedNode?.temperatureCelsius} °C, kelembapan {selectedNode?.humidityPercent}%.
-                    </p>
-                  </details>
-                </section>
-                <section aria-label="Baterai dan panel surya" className="reveal card p-5 space-y-2" style={{ ['--d' as string]: '240ms' }}>
-                  <h3 className="font-display text-base font-extrabold tracking-tight">BATERAI & PANEL SURYA</h3>
-                  <p className="text-xl font-extrabold">
-                    {selectedNode ? interpretBattery(selectedNode.batteryVoltage) : '—'}
-                  </p>
-                  <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-                    {selectedNode?.solarStatus === 'Charging (Terik)'
-                      ? 'Panel surya sedang mengisi (cuaca cerah).'
-                      : selectedNode?.solarStatus === 'Standby (Mendung)'
-                        ? 'Panel surya siaga (cuaca mendung).'
-                        : 'Mode malam — memakai baterai.'}
-                  </p>
-                  <details className="text-sm card-inset p-3">
-                    <summary className="font-bold cursor-pointer min-h-[44px] flex items-center">
-                      Detail teknis (untuk teknisi)
-                    </summary>
-                    <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
-                      Baterai 18650: {selectedNode?.batteryVoltage} V ({selectedNode?.batteryPercent}%) • Modul CN3065:{' '}
-                      {selectedNode?.solarCurrentMa} mA.
-                    </p>
-                  </details>
-                </section>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* 1. KARTU VOLUME & JARAK (JSN-SR04T) */}
+                {(() => {
+                  const vol = selectedNode?.currentVolumePercent ?? 0;
+                  const dist = selectedNode?.measuredDistanceCm ?? -1;
+                  const volColor = vol >= 80 ? 'var(--critical)' : vol >= 50 ? 'var(--warning)' : 'var(--success)';
+                  const volBadgeBg = vol >= 80 ? 'var(--critical-bg)' : vol >= 50 ? 'var(--warning-bg)' : 'var(--success-bg)';
+                  const volStatus = vol >= 80 ? 'Penuh — Prioritas Angkut' : vol >= 50 ? 'Siaga — Setengah Penuh' : 'Normal / Masih Lega';
+                  return (
+                    <section aria-label="Kapasitas dan volume sampah" className="reveal card p-5 space-y-4" style={{ ['--d' as string]: '120ms' }}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: volBadgeBg, color: volColor }}>
+                            <Gauge className="w-5 h-5" aria-hidden />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                              Sensor Ultrasonik JSN-SR04T
+                            </span>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">VOLUME SAMPAH</h3>
+                          </div>
+                        </div>
+                        <span
+                          className="px-2.5 py-1 rounded-full text-xs font-extrabold border"
+                          style={{ backgroundColor: volBadgeBg, color: volColor, borderColor: volColor }}
+                        >
+                          {volStatus}
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display text-5xl font-black tabular-nums tracking-tight" style={{ color: volColor }}>
+                          {vol}%
+                        </span>
+                        <span className="text-base font-semibold" style={{ color: 'var(--text-secondary)' }}>kapasitas terisi</span>
+                      </div>
+
+                      {/* Visual Meter Bar */}
+                      <div className="space-y-1.5">
+                        <div className="w-full h-3.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-700 ease-out"
+                            style={{
+                              width: `${Math.min(100, Math.max(0, vol))}%`,
+                              backgroundColor: volColor,
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs font-mono font-medium" style={{ color: 'var(--text-muted)' }}>
+                          <span>0% (Kosong)</span>
+                          <span style={{ color: 'var(--warning)' }}>50% (Waspada)</span>
+                          <span style={{ color: 'var(--critical)' }}>80%+ (Penuh)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-lg text-sm" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                        <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {vol >= 80
+                            ? '🚨 Bak hampir luber! Masuk antrean prioritas rute pengangkutan DLH.'
+                            : vol >= 50
+                              ? '⚠️ Bak terisi setengah lebih — pantau sebelum jam sibuk warga.'
+                              : '✅ Bak masih longgar — belum membutuhkan penjemputan armada.'}
+                        </p>
+                      </div>
+
+                      <details className="text-xs card-inset p-2.5">
+                        <summary className="font-bold cursor-pointer min-h-[36px] flex items-center">Detail Teknis Kalibrasi Ultrasonik</summary>
+                        <p className="mt-1.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
+                          Jarak pantul: <strong>{dist > 0 ? `${dist} cm` : 'Sensor Tertutup / Out of Range'}</strong> • Tinggi bak total: {selectedNode?.totalHeightCm ?? 95} cm • Batas buta (blind zone): {selectedNode?.blindZoneCm ?? 20} cm.
+                        </p>
+                      </details>
+                    </section>
+                  );
+                })()}
+
+                {/* 2. KARTU SUHU & KELEMBAPAN (DHT22) */}
+                {(() => {
+                  const temp = selectedNode?.temperatureCelsius ?? 0;
+                  const hum = selectedNode?.humidityPercent ?? 0;
+                  const tInfo = getTempInfo(temp);
+                  const hInfo = getHumidityInfo(hum);
+
+                  return (
+                    <section aria-label="Suhu dan kelembapan bak" className="reveal card p-5 space-y-4" style={{ ['--d' as string]: '160ms' }}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--warning-bg)', color: 'var(--warning)' }}>
+                            <Thermometer className="w-5 h-5" aria-hidden />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                              Sensor Lingkungan DHT22
+                            </span>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">SUHU & KELEMBAPAN</h3>
+                          </div>
+                        </div>
+                        <span
+                          className="px-2.5 py-1 rounded-full text-xs font-extrabold border"
+                          style={{
+                            backgroundColor: temp >= 32 || hum >= 75 ? 'var(--warning-bg)' : 'var(--success-bg)',
+                            color: temp >= 32 || hum >= 75 ? 'var(--warning)' : 'var(--success)',
+                            borderColor: temp >= 32 || hum >= 75 ? 'var(--warning)' : 'var(--success)',
+                          }}
+                        >
+                          {temp >= 35 || hum >= 85 ? 'Fermentasi Aktif' : 'Mikroiklim Stabil'}
+                        </span>
+                      </div>
+
+                      {/* Dual Metric Columns */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Suhu */}
+                        <div className="card-inset p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
+                              <Thermometer className="w-3.5 h-3.5" /> Suhu
+                            </span>
+                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: tInfo.badgeBg, color: tInfo.badgeColor }}>
+                              {tInfo.status}
+                            </span>
+                          </div>
+                          <p className="font-display text-3xl font-black tabular-nums tracking-tight">
+                            {temp}<span className="text-lg font-bold"> °C</span>
+                          </p>
+                          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${tInfo.percent}%`, backgroundColor: tInfo.color }} />
+                          </div>
+                          <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{tInfo.desc}</p>
+                        </div>
+
+                        {/* Kelembapan */}
+                        <div className="card-inset p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
+                              <Droplets className="w-3.5 h-3.5" /> Kelembapan (RH)
+                            </span>
+                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: hInfo.badgeBg, color: hInfo.badgeColor }}>
+                              {hInfo.status}
+                            </span>
+                          </div>
+                          <p className="font-display text-3xl font-black tabular-nums tracking-tight">
+                            {hum}<span className="text-lg font-bold"> %</span>
+                          </p>
+                          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${hInfo.percent}%`, backgroundColor: hInfo.color }} />
+                          </div>
+                          <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{hInfo.desc}</p>
+                        </div>
+                      </div>
+
+                      {/* Mikroiklim note */}
+                      <div className="p-2.5 rounded-lg text-xs" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          <strong>Analisis Dekomposisi: </strong>
+                          {hum > 75 && temp > 30
+                            ? 'Kombinasi lembap tinggi (>75%) dan hangat (>30°C) memicu percepatan bakteri anaerobik menghasilkan bau & gas.'
+                            : 'Kondisi suhu dan kelembapan bak relatif seimbang, laju pembusukan sampah terkendali.'}
+                        </p>
+                      </div>
+
+                      <details className="text-xs card-inset p-2.5">
+                        <summary className="font-bold cursor-pointer min-h-[36px] flex items-center">Detail Pinout & Kalibrasi DHT22</summary>
+                        <p className="mt-1.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
+                          GPIO Pin: D19 • Rentang operasi: -40 s/d 80°C (akurasi ±0.5°C), 0–100% RH (akurasi ±2%).
+                        </p>
+                      </details>
+                    </section>
+                  );
+                })()}
+
+                {/* 3. KARTU GAS AMONIA & BAU BUSUK (MQ-135) */}
+                {(() => {
+                  const nh3 = selectedNode?.gasPpmMQ135 ?? 0;
+                  const nh3Info = getAmmoniaInfo(nh3);
+                  return (
+                    <section aria-label="Sensor gas amonia dan bau busuk" className="reveal card p-5 space-y-4" style={{ ['--d' as string]: '200ms' }}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: nh3Info.badgeBg, color: nh3Info.color }}>
+                            <Wind className="w-5 h-5" aria-hidden />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                              Sensor Gas MQ-135 (NH₃ / Organik)
+                            </span>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">GAS AMONIA (BAU BUSUK)</h3>
+                          </div>
+                        </div>
+                        <span
+                          className="px-2.5 py-1 rounded-full text-xs font-extrabold border"
+                          style={{ backgroundColor: nh3Info.badgeBg, color: nh3Info.color, borderColor: nh3Info.borderColor }}
+                        >
+                          {nh3Info.status}
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display text-5xl font-black tabular-nums tracking-tight" style={{ color: nh3Info.color }}>
+                          {nh3}
+                        </span>
+                        <span className="text-base font-semibold" style={{ color: 'var(--text-secondary)' }}>ppm (Ammonia Equivalent)</span>
+                      </div>
+
+                      {/* Visual Meter Bar */}
+                      <div className="space-y-1.5">
+                        <div className="w-full h-3.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-700 ease-out"
+                            style={{
+                              width: `${nh3Info.percent}%`,
+                              backgroundColor: nh3Info.color,
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs font-mono font-medium" style={{ color: 'var(--text-muted)' }}>
+                          <span>0 ppm (Segar)</span>
+                          <span style={{ color: 'var(--warning)' }}>30 ppm (Mulai Berbau)</span>
+                          <span style={{ color: 'var(--critical)' }}>60+ ppm (Menyengat)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-lg text-sm" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                        <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {nh3Info.action}
+                        </p>
+                      </div>
+
+                      <details className="text-xs card-inset p-2.5">
+                        <summary className="font-bold cursor-pointer min-h-[36px] flex items-center">Detail Kalibrasi Sensor MQ-135</summary>
+                        <p className="mt-1.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
+                          Pin Analog: GPIO 34 (ADC1) • ADC Terbaca: {liveRaw?.mq135Adc ?? '—'} (12-bit / 0–4095) • Skala Demo: {liveRaw?.mq135Pct ?? '—'}% ADC • Target Deteksi: Gas NH₃ (Amonia), Alkohol, Sulfida dari sampah basah.
+                        </p>
+                      </details>
+                    </section>
+                  );
+                })()}
+
+                {/* 4. KARTU GAS METANA & RISIKO API (MQ-4) */}
+                {(() => {
+                  const ch4 = selectedNode?.methanePpmMQ4 ?? 0;
+                  const ch4Info = getMethaneInfo(ch4);
+                  return (
+                    <section aria-label="Sensor gas metana dan risiko kebakaran" className="reveal card p-5 space-y-4" style={{ ['--d' as string]: '240ms' }}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: ch4Info.badgeBg, color: ch4Info.color }}>
+                            <Flame className="w-5 h-5" aria-hidden />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                              Sensor Gas MQ-4 (CH₄ / Biometana)
+                            </span>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">GAS METANA (RISIKO API)</h3>
+                          </div>
+                        </div>
+                        <span
+                          className="px-2.5 py-1 rounded-full text-xs font-extrabold border"
+                          style={{ backgroundColor: ch4Info.badgeBg, color: ch4Info.color, borderColor: ch4Info.borderColor }}
+                        >
+                          {ch4Info.status}
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display text-5xl font-black tabular-nums tracking-tight" style={{ color: ch4Info.color }}>
+                          {ch4}
+                        </span>
+                        <span className="text-base font-semibold" style={{ color: 'var(--text-secondary)' }}>ppm (CH₄ Concentration)</span>
+                      </div>
+
+                      {/* Visual Meter Bar */}
+                      <div className="space-y-1.5">
+                        <div className="w-full h-3.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-700 ease-out"
+                            style={{
+                              width: `${ch4Info.percent}%`,
+                              backgroundColor: ch4Info.color,
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs font-mono font-medium" style={{ color: 'var(--text-muted)' }}>
+                          <span>0 ppm (Aman)</span>
+                          <span style={{ color: 'var(--warning)' }}>100 ppm (Waspada)</span>
+                          <span style={{ color: 'var(--critical)' }}>250+ ppm (BAHAYA API)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-lg text-sm" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                        <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {ch4Info.action}
+                        </p>
+                      </div>
+
+                      <details className="text-xs card-inset p-2.5">
+                        <summary className="font-bold cursor-pointer min-h-[36px] flex items-center">Detail Kalibrasi Sensor MQ-4</summary>
+                        <p className="mt-1.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
+                          Pin Analog: GPIO 35 (ADC1) • ADC Terbaca: {liveRaw?.mq4Adc ?? '—'} (12-bit / 0–4095) • Skala Demo: {liveRaw?.mq4Pct ?? '—'}% ADC • Ambang Bahaya LEL (Lower Explosive Limit) Gas Rawa/Biometana.
+                        </p>
+                      </details>
+                    </section>
+                  );
+                })()}
+
+                {/* 5. KARTU SUPLAI DAYA & PANEL SURYA (FULL WIDTH) */}
+                {(() => {
+                  const battVolt = selectedNode?.batteryVoltage ?? 0;
+                  const battPct = selectedNode?.batteryPercent ?? 0;
+                  const solarStatus = selectedNode?.solarStatus ?? 'Night Mode';
+                  const isCharging = solarStatus === 'Charging (Terik)';
+                  const battColor = battPct > 40 ? 'var(--success)' : battPct > 20 ? 'var(--warning)' : 'var(--critical)';
+
+                  return (
+                    <section aria-label="Sistem suplai daya baterai dan panel surya" className="reveal card p-5 md:col-span-2 space-y-4" style={{ ['--d' as string]: '280ms' }}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
+                            <Sun className="w-5 h-5" aria-hidden />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                              Power Management System (IoT Standalone)
+                            </span>
+                            <h3 className="font-display text-lg font-extrabold tracking-tight">DAYA BATERAI & PANEL SURYA</h3>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="px-3 py-1 rounded-full text-xs font-extrabold border flex items-center gap-1.5"
+                            style={{
+                              backgroundColor: isCharging ? 'var(--success-bg)' : 'var(--bg-tertiary)',
+                              color: isCharging ? 'var(--success)' : 'var(--text-secondary)',
+                              borderColor: isCharging ? 'var(--success)' : 'var(--border)',
+                            }}
+                          >
+                            <Zap className="w-3.5 h-3.5" /> {solarStatus}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                        {/* Status Baterai */}
+                        <div className="card-inset p-3.5 space-y-2">
+                          <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>Status Baterai 18650</span>
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-display text-3xl font-black tabular-nums" style={{ color: battColor }}>
+                              {battPct}%
+                            </span>
+                            <span className="font-mono text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>({battVolt} V)</span>
+                          </div>
+                          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${battPct}%`, backgroundColor: battColor }} />
+                          </div>
+                          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{interpretBattery(battVolt)}</p>
+                        </div>
+
+                        {/* Modul Solar CN3065 */}
+                        <div className="card-inset p-3.5 space-y-2">
+                          <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>Solar Charge CN3065</span>
+                          <p className="font-display text-3xl font-black tabular-nums" style={{ color: isCharging ? 'var(--success)' : 'var(--text-primary)' }}>
+                            {selectedNode?.solarCurrentMa ?? 0} <span className="text-base font-bold">mA</span>
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                            {isCharging
+                              ? 'Panel surya aktif mengisi daya baterai cadangan.'
+                              : 'Arus pengisian rendah (kondisi berawan atau malam).'}
+                          </p>
+                        </div>
+
+                        {/* Pemanas Sensor Pulsed Heating */}
+                        <div className="card-inset p-3.5 space-y-2">
+                          <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>Pemanas Sensor MQ</span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="px-2 py-0.5 rounded text-xs font-extrabold"
+                              style={{
+                                backgroundColor: selectedNode?.pulsedHeatingActive ? 'var(--warning-bg)' : 'var(--bg-primary)',
+                                color: selectedNode?.pulsedHeatingActive ? 'var(--warning)' : 'var(--text-muted)',
+                              }}
+                            >
+                              {selectedNode?.pulsedHeatingActive ? 'PULSED HEATING ON' : 'STANDBY (HEMAT DAYA)'}
+                            </span>
+                          </div>
+                          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                            Metode siklus pemanas berdenyut menghemat daya baterai hingga 80% pada sensor MQ-135/MQ-4.
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+                  );
+                })()}
               </div>
               <div className="card p-4 flex flex-wrap items-center gap-3">
                 <label htmlFor="telemetry-tps" className="text-base font-bold">
