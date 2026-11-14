@@ -1,3 +1,107 @@
+export interface ScenarioNode {
+  id: string;
+  dbId?: string;
+  name: string;
+  area: string;
+  address: string;
+  lat: number;
+  lng: number;
+  distance: number;
+  fill: number;
+  volumePct: number;
+  liters: number;
+  adc: number;
+  gas: number;
+  age: number;
+  operational: 'critical' | 'warning' | 'safe';
+  sanitation: boolean;
+  temp?: number;
+  humidity?: number;
+  methaneAdc?: number;
+  methanePpm?: number;
+  batteryVolt?: number;
+  batteryPct?: number;
+  solarStatus?: string;
+  solarCurrentMa?: number;
+  lastTelemetryText?: string;
+  provenance?: 'db' | 'live-serial' | 'live-bridge' | 'sim';
+}
+
+export function normalizeNodeId(id: string): string {
+  if (id.startsWith('NODE-MGL-0')) return 'NODE-0' + id.slice(10);
+  if (id.startsWith('NODE-MGL-')) return 'NODE-' + id.slice(9);
+  return id;
+}
+
+export function tpsNodeToScenarioNode(tps: TPSNode): ScenarioNode {
+  const shortId = normalizeNodeId(tps.id);
+  const fill = Math.min(100, Math.max(0, tps.currentVolumePercent));
+  const volumePct = Math.round(fill * 0.98 * 10) / 10;
+  const liters = Math.round((volumePct / 100) * (tps.capacityLiters || 120) * 10) / 10;
+
+  let operational: 'critical' | 'warning' | 'safe' = 'safe';
+  if (fill >= 75) operational = 'critical';
+  else if (fill >= 50) operational = 'warning';
+
+  const distance = tps.measuredDistanceCm ?? Math.max(20, Math.min(95, Math.round((95 - (fill * 75) / 100) * 10) / 10));
+  const gasIndex = Math.min(100, Math.max(0, Math.round((tps.gasPpmMQ135 / 100) * 100)));
+  const adc = Math.round((gasIndex / 100) * 4095);
+  const isSanitation = gasIndex >= 60 || tps.gasStatusMQ135 === 'Tinggi (Bau Busuk)';
+
+  let area = 'Kota Magelang';
+  if (tps.address.includes('Utara')) area = 'Magelang Utara';
+  else if (tps.address.includes('Selatan')) area = 'Magelang Selatan';
+  else if (tps.address.includes('Tengah')) area = 'Magelang Tengah';
+
+  return {
+    id: shortId,
+    dbId: tps.id,
+    name: tps.name,
+    area,
+    address: tps.address,
+    lat: tps.coordinates[0],
+    lng: tps.coordinates[1],
+    distance,
+    fill,
+    volumePct,
+    liters,
+    adc,
+    gas: gasIndex,
+    age: 1,
+    operational,
+    sanitation: isSanitation,
+    temp: tps.temperatureCelsius,
+    humidity: tps.humidityPercent,
+    methanePpm: tps.methanePpmMQ4,
+    batteryVolt: tps.batteryVoltage,
+    batteryPct: tps.batteryPercent,
+    solarStatus: tps.solarStatus,
+    solarCurrentMa: tps.solarCurrentMa,
+    lastTelemetryText: tps.lastTelemetry,
+    provenance: 'db',
+  };
+}
+
+export const CANONICAL_SCENARIO: ScenarioNode[] = [
+  { id: 'NODE-01', name: 'TPS Pasar Rejowinangun', area: 'Magelang Selatan', address: 'Jl. Mataram, Rejowinangun Selatan', lat: -7.4815, lng: 110.2223, distance: 26.0, fill: 92.0, volumePct: 90.6, liters: 108.8, adc: 2800, gas: 68, age: 1, operational: 'critical', sanitation: true },
+  { id: 'NODE-02', name: 'TPS Alun-Alun Magelang', area: 'Magelang Tengah', address: 'Kawasan Alun-Alun, Kemirirejo', lat: -7.4798, lng: 110.2178, distance: 30.5, fill: 86.0, volumePct: 83.8, liters: 100.5, adc: 1150, gas: 28, age: 3, operational: 'critical', sanitation: false },
+  { id: 'NODE-03', name: 'TPS RSUD Tidar', area: 'Magelang Selatan', address: 'Jl. Tidar No. 30A', lat: -7.4886, lng: 110.2162, distance: 33.5, fill: 82.0, volumePct: 79.3, liters: 95.1, adc: 2650, gas: 65, age: 2, operational: 'critical', sanitation: true },
+  { id: 'NODE-04', name: 'TPS Taman Kyai Langgeng', area: 'Magelang Selatan', address: 'Jl. Cempaka No. 6', lat: -7.4839, lng: 110.2115, distance: 39.5, fill: 74.0, volumePct: 70.4, liters: 84.5, adc: 750, gas: 18, age: 5, operational: 'warning', sanitation: false },
+  { id: 'NODE-05', name: 'TPS Kampus Tuguran', area: 'Magelang Utara', address: 'Jl. Kapten Suparman No. 39', lat: -7.4642, lng: 110.2291, distance: 28.2, fill: 89.1, volumePct: 87.3, liters: 104.8, adc: 2450, gas: 60, age: 1, operational: 'critical', sanitation: true },
+  { id: 'NODE-06', name: 'TPS Terminal Tidar', area: 'Magelang Selatan', address: 'Jl. Soekarno-Hatta, Magersari', lat: -7.5025, lng: 110.2268, distance: 44.0, fill: 68.0, volumePct: 64.0, liters: 76.8, adc: 620, gas: 15, age: 4, operational: 'warning', sanitation: false },
+  { id: 'NODE-07', name: 'TPS Potrobangsan', area: 'Magelang Utara', address: 'Jl. Pahlawan, Magelang Utara', lat: -7.4610, lng: 110.2215, distance: 64.2, fill: 41.1, volumePct: 36.6, liters: 43.9, adc: 339, gas: 8, age: 7, operational: 'safe', sanitation: false },
+  { id: 'NODE-08', name: 'TPS Kebonpolo', area: 'Magelang Utara', address: 'Jl. Urip Sumoharjo', lat: -7.4695, lng: 110.2238, distance: 68.7, fill: 35.1, volumePct: 30.9, liters: 37.1, adc: 290, gas: 7, age: 6, operational: 'safe', sanitation: false }
+];
+
+export const fmt = (n: number, decimals = 1) =>
+  Number(n).toLocaleString('id-ID', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+export const freshness = (age: number): 'live' | 'delayed' | 'stale' | 'offline' =>
+  age < 4 ? 'live' : age <= 15 ? 'delayed' : age <= 120 ? 'stale' : 'offline';
+
+export const statusLabel = (s: 'critical' | 'warning' | 'safe') =>
+  ({ critical: 'Prioritas', warning: 'Siaga', safe: 'Aman' })[s];
+
 export interface TPSNode {
   id: string;
   name: string;

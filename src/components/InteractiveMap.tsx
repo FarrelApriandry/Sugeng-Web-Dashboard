@@ -1,74 +1,79 @@
 import React, { useEffect, useRef, useState } from 'react';
-import type { TPSNode, CVRPSolution } from '../data/dummyData';
-import { POOL_DEPOT, TPSA_BANYUURIP } from '../data/dummyData';
+import type { ScenarioNode } from '../data/dummyData';
+import { POOL_DEPOT, TPSA_BANYUURIP, fmt, statusLabel } from '../data/dummyData';
 
 interface Props {
-  nodes: TPSNode[];
-  cvrp: CVRPSolution;
-  selectedNode: TPSNode | null;
-  onSelectNode: (node: TPSNode) => void;
-  showRoute: boolean;
-  theme: 'light' | 'dark';
+  nodes: ScenarioNode[];
+  selectedId: string;
+  onSelectNode: (id: string) => void;
+  showSpecial: boolean;
+  fitTrigger: number;
 }
-
-function statusOf(node: TPSNode): 'critical' | 'warning' | 'optimal' {
-  if (node.currentVolumePercent >= 80 || node.gasStatusMQ135 === 'Tinggi (Bau Busuk)') return 'critical';
-  if (node.currentVolumePercent >= 50) return 'warning';
-  return 'optimal';
-}
-
-// API key CARTO Basemaps via env untuk raster tiles.
-// Astro: variabel diawali PUBLIC_ otomatis tersedia di client via import.meta.env.
-const CARTO_API_KEY = import.meta.env.PUBLIC_CARTO_KEY as string | undefined;
-
-function tileUrl(style: 'voyager' | 'dark_all'): string {
-  const base = `https://{s}.basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}{r}.png`;
-  return CARTO_API_KEY ? `${base}?key=${CARTO_API_KEY}` : base;
-}
-
-const TILE_URL: Record<Props['theme'], string> = {
-  // P1: mode terang memakai basemap terang agar terbaca di siang hari/outdoor
-  light: tileUrl('voyager'),
-  dark: tileUrl('dark_all'),
-};
 
 export const InteractiveMap: React.FC<Props> = ({
   nodes,
-  cvrp,
-  selectedNode,
+  selectedId,
   onSelectNode,
-  showRoute,
-  theme,
+  showSpecial,
+  fitTrigger,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<{ [key: string]: any }>({});
-  const routePolylineRef = useRef<any>(null);
-  const tileLayerRef = useRef<any>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const markersRef = useRef<Map<string, any>>(new Map());
+  const specialMarkersRef = useRef<any[]>([]);
+  const routeLineRef = useRef<any>(null);
+  const [mapReady, setMapReady] = useState(false);
 
+  // Inisialisasi peta Leaflet
   useEffect(() => {
     if (typeof window === 'undefined' || !mapContainerRef.current) return;
     let isMounted = true;
 
-    const initMap = async () => {
+    const init = async () => {
       const L = await import('leaflet');
       if (!isMounted || !mapContainerRef.current || mapInstanceRef.current) return;
 
       const map = L.map(mapContainerRef.current, {
-        center: [-7.482, 110.222],
+        center: [-7.4800, 110.2200],
         zoom: 14,
         zoomControl: false,
+        scrollWheelZoom: false,
+        attributionControl: true,
       });
 
-      // Kontrol zoom di kanan bawah
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      L.control.zoom({ position: 'topright' }).addTo(map);
+
+      // Basemap Voyager CARTO
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19,
+      }).addTo(map);
 
       mapInstanceRef.current = map;
-      setMapLoaded(true);
+
+      // Closed-loop CVRP route polyline (Depot -> Alun-Alun -> Rejowinangun -> RSUD Tidar -> Tuguran -> TPSA -> Depot)
+      const routePoints: [number, number][] = [
+        [POOL_DEPOT.lat, POOL_DEPOT.lng],
+        [-7.4798, 110.2178], // Alun-Alun
+        [-7.4815, 110.2223], // Rejowinangun
+        [-7.4886, 110.2162], // RSUD Tidar
+        [-7.4642, 110.2291], // Tuguran
+        [TPSA_BANYUURIP.lat, TPSA_BANYUURIP.lng],
+        [POOL_DEPOT.lat, POOL_DEPOT.lng],
+      ];
+
+      routeLineRef.current = L.polyline(routePoints, {
+        color: '#3975a5',
+        weight: 3.5,
+        opacity: 0.85,
+        dashArray: '6 4',
+      }).addTo(map);
+
+      setMapReady(true);
     };
 
-    initMap();
+    init();
 
     return () => {
       isMounted = false;
@@ -79,218 +84,196 @@ export const InteractiveMap: React.FC<Props> = ({
     };
   }, []);
 
-  // Ganti basemap saat tema berubah
+  // Update markers
   useEffect(() => {
-    if (!mapLoaded || !mapInstanceRef.current) return;
-    const swapTiles = async () => {
-      const L = await import('leaflet');
-      const map = mapInstanceRef.current;
-      if (tileLayerRef.current) {
-        tileLayerRef.current.remove();
-        tileLayerRef.current = null;
-      }
-      tileLayerRef.current = L.tileLayer(TILE_URL[theme], {
-        attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(map);
-    };
-    swapTiles();
-  }, [mapLoaded, theme]);
+    if (!mapReady || !mapInstanceRef.current) return;
 
-  useEffect(() => {
-    if (!mapLoaded || !mapInstanceRef.current) return;
-
-    const renderLayers = async () => {
+    const updatePins = async () => {
       const L = await import('leaflet');
       const map = mapInstanceRef.current;
 
-      Object.values(markersRef.current).forEach((m: any) => m.remove());
-      markersRef.current = {};
+      // Bersihkan marker lama jika ada
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current.clear();
+      specialMarkersRef.current.forEach((m) => m.remove());
+      specialMarkersRef.current = [];
 
-      if (routePolylineRef.current) {
-        routePolylineRef.current.remove();
-        routePolylineRef.current = null;
-      }
-
-      // Pool armada DLH
-      const depotIcon = L.divIcon({
-        className: 'leaflet-divicon-sugeng',
-        html: `
-          <div class="sugeng-marker sugeng-marker-depot" title="Pool DLH Kota Magelang: titik awal armada">
-            DLH
-          </div>
-        `,
-        iconSize: [52, 52],
-        iconAnchor: [26, 26],
-      });
-      const depotMarker = L.marker(POOL_DEPOT.coordinates, { icon: depotIcon, keyboard: true })
-        .addTo(map)
-        .bindPopup(
-          `<div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.55;color:#101828;min-width:190px"><p style="margin:0 0 4px;font-family:Archivo,sans-serif;font-weight:800;font-size:15px;letter-spacing:-0.01em">${POOL_DEPOT.name}</p><p style="margin:0;color:#344054">${POOL_DEPOT.address}</p><p style="margin:6px 0 0;display:inline-block;background:#0E7A3D;color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:9999px">Tempat berangkat armada</p></div>`
-        );
-      markersRef.current['depot'] = depotMarker;
-
-      // TPSA Banyuurip
-      const landfillIcon = L.divIcon({
-        className: 'leaflet-divicon-sugeng',
-        html: `
-          <div class="sugeng-marker sugeng-marker-landfill" title="TPSA Banyuurip: tempat bongkar muatan">
-            TPA
-          </div>
-        `,
-        iconSize: [52, 52],
-        iconAnchor: [26, 26],
-      });
-      const landfillMarker = L.marker(TPSA_BANYUURIP.coordinates, { icon: landfillIcon, keyboard: true })
-        .addTo(map)
-        .bindPopup(
-          `<div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.55;color:#101828;min-width:190px"><p style="margin:0 0 4px;font-family:Archivo,sans-serif;font-weight:800;font-size:15px;letter-spacing:-0.01em">${TPSA_BANYUURIP.name}</p><p style="margin:0;color:#344054">${TPSA_BANYUURIP.address}</p><p style="margin:6px 0 0;display:inline-block;background:#101828;color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:9999px">Tempat bongkar muatan</p></div>`
-        );
-      markersRef.current['landfill'] = landfillMarker;
-
-      // Marker titik TPS
-      nodes.forEach((node) => {
-        const st = statusOf(node);
-        const label = st === 'critical' ? 'Penuh, segera angkut' : st === 'warning' ? 'Hampir penuh' : 'Aman';
-        const isSelected = selectedNode?.id === node.id;
-
-        const icon = L.divIcon({
-          className: 'leaflet-divicon-sugeng',
-          html: `
-            <div title="${node.name}: ${node.currentVolumePercent}% (${label})" style="position:relative;cursor:pointer;">
-              <div class="sugeng-marker sugeng-marker-${st} ${isSelected ? 'sugeng-marker-selected' : ''}" style="width:54px;height:54px;font-size:15px;">
-                ${node.currentVolumePercent}%
-              </div>
-            </div>
-          `,
-          iconSize: [54, 54],
-          iconAnchor: [27, 27],
+      // Helper icon
+      const createIcon = (n: ScenarioNode) => {
+        const isSel = n.id === selectedId;
+        return L.divIcon({
+          className: '',
+          html: `<div class="map-pin ${n.operational} ${isSel ? 'selected' : ''}">${n.id.slice(-2)}</div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
         });
+      };
 
-        const marker = L.marker(node.coordinates, { icon, keyboard: true, title: `${node.name}: ${node.currentVolumePercent}% (${label})` })
-          .addTo(map)
-          .bindPopup(
-            `<div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.55;color:#101828;min-width:200px"><p style="margin:0 0 4px;font-family:Archivo,sans-serif;font-weight:800;font-size:15px;letter-spacing:-0.01em">${node.name}</p><p style="margin:0;font-weight:700">Sampah ${node.currentVolumePercent}%: ${label}</p><p style="margin:4px 0 0;color:#344054;font-size:13px">${node.address}</p></div>`
-          )
-          .on('click', () => onSelectNode(node));
-
-        markersRef.current[node.id] = marker;
+      // Tambahkan marker TPS
+      nodes.forEach((n) => {
+        const marker = L.marker([n.lat, n.lng], { icon: createIcon(n) }).addTo(map);
+        marker.bindPopup(
+          `<div class="map-popup-name">${n.name}</div><div class="map-popup-detail">${n.id} · Fill height ${fmt(n.fill)}% · ${statusLabel(n.operational)}</div>`
+        );
+        marker.on('click', () => {
+          onSelectNode(n.id);
+        });
+        markersRef.current.set(n.id, marker);
       });
 
-      // Rute optimasi armada
-      if (showRoute && cvrp.waypoints.length > 0) {
-        const latlngs: [number, number][] = cvrp.waypoints.map((wp) => [wp.lat, wp.lng]);
-        L.polyline(latlngs, {
-          color: '#fffdf8',
-          weight: 9,
-          opacity: 0.95,
-          lineCap: 'round',
-          lineJoin: 'round',
-        }).addTo(map);
-        const polyline = L.polyline(latlngs, {
-          color: '#E85D04',
-          weight: 5,
-          opacity: 1,
-          lineCap: 'round',
-          lineJoin: 'round',
-          dashArray: '1 7',
-        }).addTo(map);
-        routePolylineRef.current = polyline;
+      // Special pins: Depot & TPSA
+      const depotIcon = L.divIcon({
+        className: '',
+        html: '<div class="special-pin">D</div>',
+        iconSize: [25, 25],
+        iconAnchor: [12, 12],
+      });
+      const tpsaIcon = L.divIcon({
+        className: '',
+        html: '<div class="special-pin destination">A</div>',
+        iconSize: [25, 25],
+        iconAnchor: [12, 12],
+      });
+
+      const dm = L.marker([POOL_DEPOT.lat, POOL_DEPOT.lng], { icon: depotIcon }).bindPopup(
+        `<div class="map-popup-name">${POOL_DEPOT.name}</div><div class="map-popup-detail">Titik awal dan akhir skenario</div>`
+      );
+      const tm = L.marker([TPSA_BANYUURIP.lat, TPSA_BANYUURIP.lng], { icon: tpsaIcon }).bindPopup(
+        `<div class="map-popup-name">${TPSA_BANYUURIP.name}</div><div class="map-popup-detail">Fasilitas pembuangan antara skenario</div>`
+      );
+
+      specialMarkersRef.current = [dm, tm];
+      if (showSpecial) {
+        specialMarkersRef.current.forEach((m) => m.addTo(map));
+      }
+
+      // Initial fitBounds
+      const allMarkers = [...markersRef.current.values(), ...(showSpecial ? specialMarkersRef.current : [])];
+      if (allMarkers.length > 0) {
+        const group = L.featureGroup(allMarkers);
+        map.fitBounds(group.getBounds().pad(0.12));
       }
     };
 
-    renderLayers();
-  }, [mapLoaded, nodes, cvrp, selectedNode, showRoute]);
+    updatePins();
+  }, [mapReady, nodes]);
 
+  // Update selection style & fly to node
   useEffect(() => {
-    if (!mapInstanceRef.current || !selectedNode) return;
-    mapInstanceRef.current.flyTo(selectedNode.coordinates, 15, { duration: 1.0 });
-  }, [selectedNode]);
+    if (!mapReady || !mapInstanceRef.current) return;
+    const updateSel = async () => {
+      const L = await import('leaflet');
+      const map = mapInstanceRef.current;
+      nodes.forEach((n) => {
+        const m = markersRef.current.get(n.id);
+        if (m) {
+          const isSel = n.id === selectedId;
+          m.setIcon(
+            L.divIcon({
+              className: '',
+              html: `<div class="map-pin ${n.operational} ${isSel ? 'selected' : ''}">${n.id.slice(-2)}</div>`,
+              iconSize: [22, 22],
+              iconAnchor: [11, 11],
+            })
+          );
+          if (isSel) {
+            map.flyTo([n.lat, n.lng], 15, { duration: 0.5 });
+            m.openPopup();
+          }
+        }
+      });
+    };
+    updateSel();
+  }, [selectedId, mapReady]);
+
+  // Toggle special markers
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    specialMarkersRef.current.forEach((m) => {
+      if (showSpecial) {
+        m.addTo(map);
+      } else {
+        map.removeLayer(m);
+      }
+    });
+  }, [showSpecial, mapReady]);
+
+  // Fit bounds trigger
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current || fitTrigger === 0) return;
+    const updateFit = async () => {
+      const L = await import('leaflet');
+      const map = mapInstanceRef.current;
+      const allMarkers = [...markersRef.current.values(), ...(showSpecial ? specialMarkersRef.current : [])];
+      if (allMarkers.length > 0) {
+        const group = L.featureGroup(allMarkers);
+        map.fitBounds(group.getBounds().pad(0.12));
+      }
+    };
+    updateFit();
+  }, [fitTrigger]);
 
   return (
-    <div
-      className="relative w-full h-full rounded-[10px] overflow-hidden"
-      style={{
-        minHeight: 480,
-        border: '1.5px solid var(--border-strong)',
-        boxShadow: 'var(--hard-shadow)',
-        backgroundColor: 'var(--bg-secondary)',
-      }}
-    >
-      <div ref={mapContainerRef} className="w-full h-full z-0" style={{ minHeight: 480 }} />
-
-      {/* Legenda peta */}
-      <div
-        className="absolute top-3 left-3 z-[1000] px-4 py-3 rounded-[10px] text-sm space-y-1.5"
-        style={{
-          backgroundColor: theme === 'light' ? 'rgba(255,253,248,.97)' : 'rgba(22,27,34,.97)',
-          border: '1.5px solid var(--border-strong)',
-          boxShadow: 'var(--hard-shadow)',
-          color: 'var(--text-primary)',
-          maxWidth: 258,
-        }}
-      >
-        <p className="font-display font-extrabold text-sm tracking-tight">PETA TPS · KOTA MAGELANG</p>
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <span
-            aria-hidden
-            className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white font-display"
-            style={{ backgroundColor: '#C1272D', border: '2px solid #101828', fontSize: 11 }}
-          >
-            80+
-          </span>
-          Penuh (≥ 80%): segera angkut
-        </p>
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <span
-            aria-hidden
-            className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white font-display"
-            style={{ backgroundColor: '#92400e', border: '2px solid #101828', fontSize: 11 }}
-          >
-            50+
-          </span>
-          Hampir penuh (50-79%)
-        </p>
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <span
-            aria-hidden
-            className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white font-display"
-            style={{ backgroundColor: '#0E7A3D', border: '2px solid #101828', fontSize: 11 }}
-          >
-            OK
-          </span>
-          Aman (&lt; 50%)
-        </p>
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <span
-            aria-hidden
-            className="inline-flex items-center justify-center w-7 h-7 rounded text-white font-display"
-            style={{ backgroundColor: '#0E7A3D', border: '2px solid #101828', fontSize: 10 }}
-          >
-            DLH
-          </span>
-          Pool armada (berangkat)
-        </p>
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <span
-            aria-hidden
-            className="inline-flex items-center justify-center w-7 h-7 rounded text-white font-display"
-            style={{ backgroundColor: '#101828', border: '2px solid #101828', fontSize: 10 }}
-          >
-            TPA
-          </span>
-          TPSA Banyuurip (bongkar)
-        </p>
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <span
-            aria-hidden
-            className="inline-block w-7 h-0"
-            style={{ borderTop: '5px solid #E85D04', borderRadius: 2 }}
-          />
-          Rute armada DLH 03
-        </p>
+    <div className="map-wrap">
+      {/* Fallback SVG saat offline atau sebelum tiles siap */}
+      <div className={`map-fallback ${mapReady ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} id="map-fallback" aria-hidden="true">
+        <svg viewBox="0 0 900 560" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
+          <defs>
+            <pattern id="blocks" width="110" height="82" patternUnits="userSpaceOnUse">
+              <rect x="9" y="9" width="35" height="23" rx="4" fill="#dce5dc" />
+              <rect x="54" y="10" width="45" height="27" rx="4" fill="#e1e9e2" />
+              <rect x="11" y="42" width="39" height="30" rx="4" fill="#e3eae4" />
+              <rect x="58" y="48" width="36" height="24" rx="4" fill="#dce5dc" />
+            </pattern>
+          </defs>
+          <rect width="900" height="560" fill="#edf2ed" />
+          <rect width="900" height="560" fill="url(#blocks)" opacity=".8" />
+          <path d="M-40 115 C120 155 220 95 335 128 S570 165 690 125 S850 110 950 150" stroke="#fff" strokeWidth="13" fill="none" />
+          <path d="M-30 300 C120 260 245 300 360 275 S630 260 940 320" stroke="#fff" strokeWidth="14" fill="none" />
+          <path d="M160 -30 C175 90 140 160 175 270 S200 450 155 600" stroke="#fff" strokeWidth="13" fill="none" />
+          <path d="M455 -20 C420 100 480 170 445 280 S425 450 470 590" stroke="#fff" strokeWidth="12" fill="none" />
+          <path d="M710 -20 C685 90 730 220 690 330 S720 470 685 590" stroke="#fff" strokeWidth="13" fill="none" />
+          <path d="M60 0 C80 80 35 150 65 240 S40 400 90 560" stroke="#b8d9d0" strokeWidth="28" fill="none" opacity=".8" />
+          <path d="M60 0 C80 80 35 150 65 240 S40 400 90 560" stroke="#d5e9e1" strokeWidth="17" fill="none" />
+          <path d="M270 390 Q330 340 395 380 T540 390" stroke="#fff" strokeWidth="8" fill="none" />
+          <path d="M590 40 Q610 105 570 170 T600 275" stroke="#fff" strokeWidth="7" fill="none" />
+          <g fill="#9aa99d" fontFamily="sans-serif" fontSize="11" fontWeight="700">
+            <text x="305" y="94">MAGELANG TENGAH</text>
+            <text x="580" y="430">MAGELANG SELATAN</text>
+            <text x="240" y="475">MAGELANG UTARA</text>
+            <text x="70" y="285" transform="rotate(-88 70 285)">KORIDOR SUNGAI</text>
+          </g>
+        </svg>
       </div>
+
+      {/* Kontainer Peta Leaflet */}
+      <div id="map" ref={mapContainerRef} aria-label="Peta interaktif lokasi TPS skenario" className="absolute inset-0 z-10" />
+
+      {/* Overlay Atas Kiri */}
+      <div className="map-overlay-top">
+        <strong>WILAYAH KOTA MAGELANG</strong>
+        <span>Koordinat skenario · WGS 84</span>
+      </div>
+
+      {/* Overlay Legenda Bawah Kiri */}
+      <div className="map-legend">
+        <div className="legend-item">
+          <span className="legend-dot"></span>Prioritas
+        </div>
+        <div className="legend-item">
+          <span className="legend-dot warning"></span>Siaga
+        </div>
+        <div className="legend-item">
+          <span className="legend-dot safe"></span>Aman
+        </div>
+        <div className="legend-item">
+          <span className="legend-square"></span>Depot / TPSA
+        </div>
+      </div>
+
+      {/* Overlay Provenance Bawah Kanan */}
+      <div className="map-provenance">Titik TPS: aproksimasi geocoding skenario</div>
     </div>
   );
 };
