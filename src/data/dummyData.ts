@@ -82,12 +82,19 @@ export function tpsNodeToScenarioNode(tps: TPSNode): ScenarioNode {
   };
 }
 
+export const KAMPUS_TUGURAN_COORDS = {
+  lat: -7.459694,
+  lng: 110.216861,
+  name: 'Kampus Tuguran UNTIDAR',
+  address: 'Jl. Kapten Suparman No. 39, Potrobangsan, Magelang Utara',
+};
+
 export const CANONICAL_SCENARIO: ScenarioNode[] = [
   { id: 'NODE-01', name: 'TPS Pasar Rejowinangun', area: 'Magelang Selatan', address: 'Jl. Mataram, Rejowinangun Selatan', lat: -7.4815, lng: 110.2223, distance: 26.0, fill: 92.0, volumePct: 90.6, liters: 108.8, adc: 2800, gas: 68, age: 1, operational: 'critical', sanitation: true },
   { id: 'NODE-02', name: 'TPS Alun-Alun Magelang', area: 'Magelang Tengah', address: 'Kawasan Alun-Alun, Kemirirejo', lat: -7.4798, lng: 110.2178, distance: 30.5, fill: 86.0, volumePct: 83.8, liters: 100.5, adc: 1150, gas: 28, age: 3, operational: 'critical', sanitation: false },
   { id: 'NODE-03', name: 'TPS RSUD Tidar', area: 'Magelang Selatan', address: 'Jl. Tidar No. 30A', lat: -7.4886, lng: 110.2162, distance: 33.5, fill: 82.0, volumePct: 79.3, liters: 95.1, adc: 2650, gas: 65, age: 2, operational: 'critical', sanitation: true },
   { id: 'NODE-04', name: 'TPS Taman Kyai Langgeng', area: 'Magelang Selatan', address: 'Jl. Cempaka No. 6', lat: -7.4839, lng: 110.2115, distance: 39.5, fill: 74.0, volumePct: 70.4, liters: 84.5, adc: 750, gas: 18, age: 5, operational: 'warning', sanitation: false },
-  { id: 'NODE-05', name: 'TPS Kampus Tuguran', area: 'Magelang Utara', address: 'Jl. Kapten Suparman No. 39', lat: -7.4642, lng: 110.2291, distance: 28.2, fill: 89.1, volumePct: 87.3, liters: 104.8, adc: 2450, gas: 60, age: 1, operational: 'critical', sanitation: true },
+  { id: 'NODE-05', name: 'TPS Kampus Tuguran', area: 'Magelang Utara', address: 'Jl. Kapten Suparman No. 39', lat: -7.459694, lng: 110.216861, distance: 28.2, fill: 89.1, volumePct: 87.3, liters: 104.8, adc: 2450, gas: 60, age: 1, operational: 'critical', sanitation: true },
   { id: 'NODE-06', name: 'TPS Terminal Tidar', area: 'Magelang Selatan', address: 'Jl. Soekarno-Hatta, Magersari', lat: -7.5025, lng: 110.2268, distance: 44.0, fill: 68.0, volumePct: 64.0, liters: 76.8, adc: 620, gas: 15, age: 4, operational: 'warning', sanitation: false },
   { id: 'NODE-07', name: 'TPS Potrobangsan', area: 'Magelang Utara', address: 'Jl. Pahlawan, Magelang Utara', lat: -7.4610, lng: 110.2215, distance: 64.2, fill: 41.1, volumePct: 36.6, liters: 43.9, adc: 339, gas: 8, age: 7, operational: 'safe', sanitation: false },
   { id: 'NODE-08', name: 'TPS Kebonpolo', area: 'Magelang Utara', address: 'Jl. Urip Sumoharjo', lat: -7.4695, lng: 110.2238, distance: 68.7, fill: 35.1, volumePct: 30.9, liters: 37.1, adc: 290, gas: 7, age: 6, operational: 'safe', sanitation: false }
@@ -152,15 +159,19 @@ export interface CVRPSolution {
   }[];
 }
 
-export const POOL_DEPOT: { name: string; coordinates: [number, number]; address: string } = {
+export const POOL_DEPOT: { name: string; coordinates: [number, number]; lat: number; lng: number; address: string } = {
   name: 'Pool DLH Kota Magelang (Depot)',
   coordinates: [-7.4772, 110.2185],
+  lat: -7.4772,
+  lng: 110.2185,
   address: 'Jl. Veteran No.7, Magelang Tengah'
 };
 
-export const TPSA_BANYUURIP: { name: string; coordinates: [number, number]; address: string } = {
+export const TPSA_BANYUURIP: { name: string; coordinates: [number, number]; lat: number; lng: number; address: string } = {
   name: 'TPSA Banyuurip (TPA Akhir)',
   coordinates: [-7.4988, 110.2312],
+  lat: -7.4988,
+  lng: 110.2312,
   address: 'Kawasan TPSA Banyuurip, Tegalrejo / Magelang Selatan'
 };
 
@@ -269,7 +280,7 @@ export const DUMMY_TPS_NODES: TPSNode[] = [
     id: 'NODE-MGL-05',
     name: 'TPS Kampus Tuguran UNTIDAR',
     address: 'Jl. Kapten Suparman No.39, Tuguran, Magelang Utara',
-    coordinates: [-7.4642, 110.2291],
+    coordinates: [-7.459694, 110.216861],
     capacityLiters: 120,
     currentVolumePercent: 89,
     measuredDistanceCm: 28,

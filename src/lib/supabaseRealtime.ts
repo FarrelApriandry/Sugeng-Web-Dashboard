@@ -100,7 +100,7 @@ export function mapDbNodeToUiNode(dbNode: DbTpsNode, existingNode?: TPSNode): TP
 
   const nodeCoords: [number, number] =
     dbNode.node_id === 'NODE-MGL-05'
-      ? [-7.4642, 110.2291]
+      ? [-7.459694, 110.216861]
       : (existingNode?.coordinates || [dbNode.latitude, dbNode.longitude]);
 
   return {

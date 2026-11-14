@@ -69,7 +69,7 @@ export const InteractiveMap: React.FC<Props> = ({
         [-7.4798, 110.2178], // Alun-Alun
         [-7.4815, 110.2223], // Rejowinangun
         [-7.4886, 110.2162], // RSUD Tidar
-        [-7.4642, 110.2291], // Tuguran
+        [-7.459694, 110.216861], // Kampus Tuguran UNTIDAR
         [TPSA_BANYUURIP.lat, TPSA_BANYUURIP.lng],
         [POOL_DEPOT.lat, POOL_DEPOT.lng],
       ];
@@ -138,20 +138,66 @@ export const InteractiveMap: React.FC<Props> = ({
       // Helper icon
       const createIcon = (n: ScenarioNode) => {
         const isSel = n.id === selectedId;
+        const isCampus = n.id === 'NODE-05' || n.name.toLowerCase().includes('tuguran');
+
+        if (isCampus) {
+          return L.divIcon({
+            className: '',
+            html: `
+              <div class="campus-marker-wrap ${isSel ? 'selected' : ''}">
+                <div class="campus-pulse-ring"></div>
+                <div class="custom-campus-pin ${n.operational} ${isSel ? 'selected' : ''}" title="Kampus Tuguran UNTIDAR (DD: -7.459694, 110.216861)">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                  </svg>
+                  <span class="campus-pin-badge">${n.id.slice(-2)}</span>
+                </div>
+                <div class="campus-pin-label">Kampus Tuguran</div>
+              </div>
+            `,
+            iconSize: [36, 52],
+            iconAnchor: [18, 16],
+            popupAnchor: [0, -18],
+          });
+        }
+
         return L.divIcon({
           className: '',
           html: `<div class="map-pin ${n.operational} ${isSel ? 'selected' : ''}">${n.id.slice(-2)}</div>`,
           iconSize: [22, 22],
           iconAnchor: [11, 11],
+          popupAnchor: [0, -11],
         });
       };
 
       // Tambahkan marker TPS
       nodes.forEach((n) => {
         const marker = L.marker([n.lat, n.lng], { icon: createIcon(n) }).addTo(map);
-        marker.bindPopup(
-          `<div class="map-popup-name">${n.name}</div><div class="map-popup-detail">${n.id} · Fill height ${fmt(n.fill)}% · ${statusLabel(n.operational)}</div>`
-        );
+        const isCampus = n.id === 'NODE-05' || n.name.toLowerCase().includes('tuguran');
+
+        if (isCampus) {
+          marker.bindPopup(`
+            <div class="campus-popup">
+              <div class="campus-popup-header">
+                <span class="campus-popup-badge">KAMPUS UTAMA UNTIDAR</span>
+                <span class="campus-popup-dd">-7.459694, 110.216861</span>
+              </div>
+              <div class="map-popup-name">${n.name}</div>
+              <div class="map-popup-address">Jl. Kapten Suparman No. 39, Potrobangsan, Magelang Utara</div>
+              <div class="campus-popup-meta">
+                <span><strong>Node Prototipe:</strong> ${n.id}</span>
+                <span><strong>Kondisi Keterisian:</strong> ${fmt(n.fill)}% · ${statusLabel(n.operational)}</span>
+                <span><strong>Koordinat DD:</strong> -7.459694, 110.216861</span>
+              </div>
+            </div>
+          `);
+        } else {
+          marker.bindPopup(
+            `<div class="map-popup-name">${n.name}</div><div class="map-popup-detail">${n.id} · Fill height ${fmt(n.fill)}% · ${statusLabel(n.operational)}</div>`
+          );
+        }
+
         marker.on('click', () => {
           onSelectNode(n.id);
         });
@@ -205,14 +251,42 @@ export const InteractiveMap: React.FC<Props> = ({
         const m = markersRef.current.get(n.id);
         if (m) {
           const isSel = n.id === selectedId;
-          m.setIcon(
-            L.divIcon({
-              className: '',
-              html: `<div class="map-pin ${n.operational} ${isSel ? 'selected' : ''}">${n.id.slice(-2)}</div>`,
-              iconSize: [22, 22],
-              iconAnchor: [11, 11],
-            })
-          );
+          const isCampus = n.id === 'NODE-05' || n.name.toLowerCase().includes('tuguran');
+
+          if (isCampus) {
+            m.setIcon(
+              L.divIcon({
+                className: '',
+                html: `
+                  <div class="campus-marker-wrap ${isSel ? 'selected' : ''}">
+                    <div class="campus-pulse-ring"></div>
+                    <div class="custom-campus-pin ${n.operational} ${isSel ? 'selected' : ''}" title="Kampus Tuguran UNTIDAR (DD: -7.459694, 110.216861)">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                      </svg>
+                      <span class="campus-pin-badge">${n.id.slice(-2)}</span>
+                    </div>
+                    <div class="campus-pin-label">Kampus Tuguran</div>
+                  </div>
+                `,
+                iconSize: [36, 52],
+                iconAnchor: [18, 16],
+                popupAnchor: [0, -18],
+              })
+            );
+          } else {
+            m.setIcon(
+              L.divIcon({
+                className: '',
+                html: `<div class="map-pin ${n.operational} ${isSel ? 'selected' : ''}">${n.id.slice(-2)}</div>`,
+                iconSize: [22, 22],
+                iconAnchor: [11, 11],
+                popupAnchor: [0, -11],
+              })
+            );
+          }
+
           if (isSel) {
             map.flyTo([n.lat, n.lng], 15, { duration: 0.5 });
             m.openPopup();
@@ -295,7 +369,7 @@ export const InteractiveMap: React.FC<Props> = ({
       {/* Overlay Atas Kiri */}
       <div className="map-overlay-top">
         <strong>WILAYAH KOTA MAGELANG</strong>
-        <span>Koordinat EPSG:4326 · WGS 84</span>
+        <span>Koordinat EPSG:4326 · Tuguran (-7.459694, 110.216861)</span>
       </div>
 
       {/* Overlay Legenda Bawah Kiri */}
@@ -311,6 +385,9 @@ export const InteractiveMap: React.FC<Props> = ({
         </div>
         <div className="legend-item">
           <span className="legend-square"></span>Depot / TPSA
+        </div>
+        <div className="legend-item">
+          <span className="legend-campus"></span>Kampus Tuguran
         </div>
       </div>
 

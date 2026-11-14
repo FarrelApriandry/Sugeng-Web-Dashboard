@@ -865,6 +865,20 @@ export const SugengDashboard: React.FC = () => {
                     <span>Fasilitas</span>
                   </button>
                   <button
+                    className={`small-btn ${selectedId === 'NODE-05' ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedId('NODE-05');
+                      showToast('Fokus ke Kampus Tuguran UNTIDAR (-7.459694, 110.216861)');
+                    }}
+                    title="Fokus ke Kampus Tuguran UNTIDAR (-7.459694, 110.216861)"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                      <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                    </svg>
+                    <span>Kampus Tuguran</span>
+                  </button>
+                  <button
                     className="small-btn"
                     onClick={() => setFitTrigger((n) => n + 1)}
                     title="Pusatkan peta ke seluruh titik TPS"
@@ -1139,9 +1153,9 @@ export const SugengDashboard: React.FC = () => {
                     <strong>{freshness(selectedNode.age).toUpperCase()} · {selectedNode.provenance === 'db' ? 'Cloud WSS' : selectedNode.provenance?.includes('live') ? 'Hardware Live' : 'Simulasi'}</strong>
                   </div>
                   <div className="telemetry-meta">
-                    <span>Koordinat Geografis</span>
-                    <strong>
-                      {selectedNode.lat.toFixed(4)}, {selectedNode.lng.toFixed(4)}
+                    <span>Koordinat Geografis (DD)</span>
+                    <strong style={{ fontFamily: 'var(--mono)', fontSize: 10 }}>
+                      {selectedNode.lat.toFixed(6)}, {selectedNode.lng.toFixed(6)}
                     </strong>
                   </div>
                 </section>
