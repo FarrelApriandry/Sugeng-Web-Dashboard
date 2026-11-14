@@ -1,5 +1,5 @@
 {
-	"pid": 39758,
+	"pid": 4921,
 	"port": 5432,
 	"url": "http://localhost:5432",
 	"urls": {
@@ -8,15 +8,15 @@
 		],
 		"network": [
 			"http://192.168.1.88:5432/",
-			"http://172.19.0.1:5432/",
-			"http://172.18.0.1:5432/"
+			"http://172.18.0.1:5432/",
+			"http://172.19.0.1:5432/"
 		],
 		"networkInterfaceNames": [
 			"wlp0s20f3",
-			"br-b00dce5f6390",
-			"br-54c462fa57d6"
+			"br-54c462fa57d6",
+			"br-b00dce5f6390"
 		]
 	},
 	"background": false,
-	"startedAt": "2026-11-11T07:39:19.744Z"
+	"startedAt": "2026-11-11T08:27:16.469Z"
 }
