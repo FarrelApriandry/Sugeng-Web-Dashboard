@@ -81,10 +81,10 @@ flowchart TD
             COMP_INSPECTOR["Inspector Node & Telemetri<br/>• Detail Sensor Ultrasonik & Gas<br/>• Validasi Koordinat Presisi DD"]
         end
 
-        EngineCVRP -->|GeoJSON Path Koordinat Rute| COMP_MAP
+        ROUTER_ENGINE -->|GeoJSON Path Koordinat Rute| COMP_MAP
     end
 
-    REALTIME_SRV -->|Trigger Optimasi Armada (Keterisian ≥50%)| ROUTER_ENGINE
+    REALTIME_SRV -->|Trigger Optimasi Armada Keterisian Siaga| ROUTER_ENGINE
     REALTIME_SRV -->|WSS Realtime Push Event| COMP_MAP
     REALTIME_SRV -->|Broadcast Status Keterisian| COMP_MANIFEST
     NET_DIRECT -.->|Direct Hardware Stream| COMP_INSPECTOR
