@@ -1,0 +1,377 @@
+/**
+ * ==============================================================================
+ * SUGENG (Sistem Unggulan Pengelolaan & Monitoring Sampah Kota Magelang)
+ * Dokumentasi Diagram Alur Integrasi Data (Data Integration Pipeline)
+ * File: docs/tst/alur_integrasi_data.js
+ * ==============================================================================
+ *
+ * File ini berisi definisi diagram Mermaid.js resmi yang memodelkan alur
+ * integrasi data end-to-end dari perangkat edge sensor IoT di TPS hingga ke
+ * web dashboard SIG dan engine optimasi rute armada DLH Kota Magelang.
+ *
+ * Diagram dapat digunakan pada:
+ * 1. Markdown documentation (.md / GitHub preview)
+ * 2. Visual rendering via Mermaid CLI / Mermaid Live Editor
+ * 3. Import programatik via Node.js / Bun runtime
+ */
+
+// ==============================================================================
+// 1. DIAGRAM ALUR INTEGRASI DATA END-TO-END (FLOWCHART TD)
+// ==============================================================================
+
+export const alurIntegrasiFlowchart = `
+flowchart TD
+    %% ==========================================================================
+    %% SUGENG DATA INTEGRATION PIPELINE
+    %% ==========================================================================
+
+    subgraph PerceptionTier["1. PERCEPTION & SENSING TIER (EDGE IoT NODE)"]
+        direction TB
+        subgraph HardwareSensors["Transduser Sensorik (TPS HDPE 120L)"]
+            S_US["Sensor JSN-SR04T<br/><i>Ultrasonic Waterproof IP67</i><br/>• Trig (GPIO 12), Echo (GPIO 13)<br/>• Ukur Jarak Permukaan Sampah<br/>• Rentang Aktif: 20 - 95 cm"]
+            S_MQ135["Sensor MQ-135<br/><i>Gas Pembusukan Organik</i><br/>• Analog Out (GPIO 34 ADC1)<br/>• Indikasi Amonia (NH₃), Sulfida"]
+            S_MQ4["Sensor MQ-4<br/><i>Gas Metana / CH₄</i><br/>• Analog Out (GPIO 35 ADC1)<br/>• Deteksi Gas Mudah Terbakar"]
+            S_DHT["Sensor DHT22<br/><i>Micro-climate Sensor</i><br/>• One-Wire Data (GPIO 14)<br/>• Suhu (°C) & Kelembapan (% RH)"]
+        end
+
+        subgraph PowerSystem["Manajemen Daya & Siklus Baterai"]
+            SOLAR["Solar Panel 6V 1W<br/>Modul Charger CN3065"]
+            BATT["Baterai Li-Ion 18650<br/>1S2P (3000 - 5000 mAh)"]
+            STEPUP["MT3608 Step-Up<br/>Output Boost 5V Stabil"]
+            MOSFET["MOSFET FR120N Switch<br/>Pulsed Heating Gas Sensor"]
+        end
+
+        MCU["Mikrokontroler ESP32 DevKit V1<br/>• Akuisisi ADC 12-bit & Digital Filtering<br/>• Estimasi Volume: V% = (H_total - Jarak)/(H_total - Blind) x 100%<br/>• Serial Payload Formatter: JSON 115200 Baud<br/>• Siklus Deep Sleep & Duty-Cycle Power Management"]
+
+        S_US -->|Time of Flight| MCU
+        S_MQ135 -->|Analog Voltage| MCU
+        S_MQ4 -->|Analog Voltage| MCU
+        S_DHT -->|Digital Signal| MCU
+        SOLAR --> BATT --> STEPUP --> MCU
+        MCU -->|Kontrol Gate GPIO 4| MOSFET
+        MOSFET -->|Daya Pemanas Terjadwal| S_MQ135
+        MOSFET -->|Daya Pemanas Terjadwal| S_MQ4
+    end
+
+    subgraph IngestionTier["2. INGESTION & GATEWAY TIER (BE-SUGENG)"]
+        direction TB
+        GATEWAY["API Ingestion Gateway<br/><i>Elysia.js + Bun Runtime Engine</i><br/>• High Throughput Asynchronous I/O<br/>• OpenAPI / Swagger Documentation"]
+        AUTH["Filter Keamanan & Autentikasi<br/>• Header: X-Node-Token<br/>• Rate Limiting & Origin Validation"]
+        VALIDATOR["Skema Validasi & Type Checking<br/>• Strict Schema Validation (TypeBox)<br/>• Sensor Out-of-Range Fallback (-1 Lock)<br/>• Kalibrasi Rasio Rs/Ro Kurva Gas"]
+        EVALUATOR["Evaluasi Ambang Batas Logika Bisnis<br/>• Status Keterisian: SAFE (&lt;50%), WARNING (50-74%), CRITICAL (≥75%)<br/>• Gas Alert Trigger: NH₃ ≥ 60 ppm atau CH₄ ≥ 250 ppm<br/>• Penandaan Kebutuhan Sanitasi Khusus"]
+
+        GATEWAY --> AUTH --> VALIDATOR --> EVALUATOR
+    end
+
+    subgraph DualTransport["Pipeline Transmisi Data"]
+        direction LR
+        NET_HTTP["Transmisi Jaringan IoT<br/>WiFi / Cellular HTTP POST<br/>Endpoint: /api/telemetry"]
+        NET_DIRECT["Transmisi Uji Fisik (Direct)<br/>USB CDC Serial 115200<br/>Local Bridge ws://localhost:8765"]
+    end
+
+    MCU -->|Koneksi Internet Lapangan| NET_HTTP --> GATEWAY
+    MCU -.->|Kabel USB / Lab Sandbox| NET_DIRECT
+
+    subgraph PersistenceTier["3. PERSISTENCE & REALTIME TIER (SUPABASE CLOUD)"]
+        direction TB
+        subgraph PostgresEngine["PostgreSQL 15+ Database Core"]
+            TBL_NODES[("Tabel: public.tps_nodes<br/>• ID Node (NODE-MGL-01 s/d 09)<br/>• Nama TPS & Alamat Administratif<br/>• Volume Terakhir (%) & Kapasitas (L)<br/>• Status Operasional & Flag Gas Alert<br/>• Koordinat: geometry(Point, 4326)")]
+            TBL_LOGS[("Tabel: public.telemetry_logs<br/>• Data Time-Series Berkala (Historis)<br/>• Timestamp, Sensor Readings, ADC Log<br/>• Audit Trail untuk Analisis Tren")]
+        end
+
+        POSTGIS["Ekstensi Spasial PostGIS<br/>• Index Spasial GiST pada Kolom Location<br/>• Fungsi Sinkronisasi Trigger Spasial (EPSG:4326)<br/>• Export Format GeoJSON (ST_AsGeoJSON)"]
+        REALTIME_SRV["Supabase Realtime Service<br/><i>Engine WebSocket Elixir/Phoenix</i><br/>• CDC (Change Data Capture) via PostgreSQL WAL<br/>• Broadcast Kanal: postgres_changes on tps_nodes"]
+
+        TBL_NODES --- POSTGIS
+        TBL_NODES --> REALTIME_SRV
+    end
+
+    EVALUATOR -->|Upsert Data Status Terkini| TBL_NODES
+    EVALUATOR -->|Append Riwayat Time-Series| TBL_LOGS
+
+    subgraph AnalyticsTier["4. ANALYTICS & ROUTING OPTIMIZATION TIER"]
+        direction TB
+        ROUTER_ENGINE["Vehicle Routing Solver (Google OR-Tools)<br/><i>Capacitated Vehicle Routing Problem (CVRP)</i><br/>• Matrix Jarak & Waktu Tempuh Spasial Kota Magelang<br/>• Filter Lokasi Permintaan: TPS Prioritas (≥75%) & Siaga (≥50%)<br/>• Kendala Kapasitas: Muatan Truk Armada DLH (Maks 1000 - 1500 kg)"]
+
+        OPTIMAL_ROUTE["Rute Tertutup Pengangkutan Optimal (Closed-Loop)<br/>1. Titik Awal: Pool DLH Kota Magelang (-7.444152, 110.230185)<br/>2. Melayani TPS Kritis & Siaga Sepanjang Koridor Kota<br/>3. Titik Singgah Riset: TPS Kampus Tuguran UNTIDAR (-7.459694, 110.216861)<br/>4. Titik Pembuangan: TPSA Banyuurip (-7.4988, 110.2312)<br/>5. Titik Akhir: Kembali ke Pool DLH Kota Magelang"]
+
+        ROUTER_ENGINE --> OPTIMAL_ROUTE
+    end
+
+    POSTGIS -->|Query Koordinat & Bobot Volume| ROUTER_ENGINE
+
+    subgraph PresentationTier["5. PRESENTATION & COMMAND CENTER TIER (SUGENG DASHBOARD)"]
+        direction TB
+        UI_CORE["Astro + React Dashboard Application<br/><i>Design Token: Institutional Neutral / Institutional Green</i>"]
+
+        subgraph DashboardComponents["Komponen Cockpit Pusat Operasi"]
+            COMP_MAP["Peta Interaktif SIG (Leaflet.js + CARTO Voyager)<br/>• Marker Kustom Kampus Tuguran UNTIDAR<br/>• Marker Depot Pool DLH & Destinasi TPSA Banyuurip<br/>• Layer Visualisasi Polyline CVRP Terpadu"]
+            COMP_MANIFEST["Panel Manifest TPS Responsif<br/>• Indikator SVG Wadah Dinamis (Fill Height & ClipPath)<br/>• Monitoring Status Operasional 9 Titik TPS"]
+            COMP_INSPECTOR["Inspector Node Terpilih<br/>• Detail Telemetri Sensor Mikro (Ultrasonik & Gas)<br/>• Koordinat Presisi DD (Decimal Degrees 6 Digit)"]
+            COMP_MODULES["Modul Pendukung Operasional<br/>• Logistik Armada & Monitoring Muatan Truk<br/>• Diagnostik Sensor & Konsol Aliran Paket Data<br/>• Master Inventaris Tempat Penampungan Sementara"]
+        end
+
+        UI_CORE --> COMP_MAP
+        UI_CORE --> COMP_MANIFEST
+        UI_CORE --> COMP_INSPECTOR
+        UI_CORE --> COMP_MODULES
+    end
+
+    REALTIME_SRV -->|WSS Event Broadcast| UI_CORE
+    NET_DIRECT -.->|Web Serial API / WSS Local Stream| UI_CORE
+    OPTIMAL_ROUTE -->|GeoJSON Path Coordinates| COMP_MAP
+
+    %% ==========================================================================
+    %% DEFINISI WARNA & STYLING ELEGAN / PROFESIONAL
+    %% ==========================================================================
+    classDef edgeStyle fill:#f2f7f4,stroke:#2b6e49,stroke-width:1.5px,color:#183b27;
+    classDef gatewayStyle fill:#f0f5fa,stroke:#2c5b88,stroke-width:1.5px,color:#152c42;
+    classDef dbStyle fill:#faf6ee,stroke:#9e6e1e,stroke-width:1.5px,color:#4a320c;
+    classDef aiStyle fill:#f8f2f9,stroke:#7b397d,stroke-width:1.5px,color:#3e153f;
+    classDef uiStyle fill:#f4faf6,stroke:#176b49,stroke-width:2px,color:#114832;
+    classDef transportStyle fill:#fbfcfb,stroke:#708276,stroke-width:1.5px,stroke-dasharray: 4 2,color:#2c3a30;
+
+    class S_US,S_MQ135,S_MQ4,S_DHT,SOLAR,BATT,STEPUP,MOSFET,MCU edgeStyle;
+    class GATEWAY,AUTH,VALIDATOR,EVALUATOR gatewayStyle;
+    class TBL_NODES,TBL_LOGS,POSTGIS,REALTIME_SRV dbStyle;
+    class ROUTER_ENGINE,OPTIMAL_ROUTE aiStyle;
+    class UI_CORE,COMP_MAP,COMP_MANIFEST,COMP_INSPECTOR,COMP_MODULES uiStyle;
+    class NET_HTTP,NET_DIRECT transportStyle;
+`;
+
+// ==============================================================================
+// 2. DIAGRAM URUTAN INTERAKSI REALTIME (SEQUENCE DIAGRAM)
+// ==============================================================================
+
+export const alurIntegrasiSequence = `
+sequenceDiagram
+    autonumber
+    actor SensorNode as Node IoT (ESP32)
+    participant DirectTransport as Direct USB / Local Bridge
+    participant Middleware as BE-SUGENG (Elysia.js)
+    participant Database as Supabase DB (PostgreSQL + PostGIS)
+    participant RealtimeSrv as Supabase Realtime (WebSocket)
+    participant RoutingSolver as Google OR-Tools (CVRP Solver)
+    participant DashboardWeb as Sugeng Dashboard (Web GIS)
+
+    %% --------------------------------------------------------------------------
+    %% FASE 1: INGESTI WIRELESS PERIODIK
+    %% --------------------------------------------------------------------------
+    rect rgb(242, 247, 244)
+    Note over SensorNode,Database: 1. Transmisi Data Berkala (Wireless Remote Operation)
+    SensorNode->>SensorNode: Bangun dari Deep Sleep & Aktifkan MOSFET FR120N
+    SensorNode->>SensorNode: Sampling JSN-SR04T, MQ-135, MQ-4, DHT22
+    SensorNode->>Middleware: HTTP POST /api/telemetry (Payload + X-Node-Token)
+    Middleware->>Middleware: Validasi Schema TypeBox & Sanitasi Data
+    Middleware->>Middleware: Klasifikasi Status (Aman, Siaga, Prioritas, Gas Alert)
+    Middleware->>Database: UPDATE public.tps_nodes & INSERT public.telemetry_logs
+    Database->>RealtimeSrv: Trigger WAL Event (postgres_changes on tps_nodes)
+    RealtimeSrv-->>DashboardWeb: WSS Push Broadcast Update Telemetri
+    DashboardWeb->>DashboardWeb: Re-render Manifest, SVG Bin Gauge & Marker GIS
+    SensorNode->>SensorNode: Masuk Siklus Deep Sleep untuk Efisiensi Daya
+    end
+
+    %% --------------------------------------------------------------------------
+    %% FASE 2: TESTING HARDWARE LANGSUNG (USB SERIAL / BRIDGE)
+    %% --------------------------------------------------------------------------
+    rect rgb(240, 245, 250)
+    Note over SensorNode,DashboardWeb: 2. Transmisi Direct Hardware (Lab Prototype Testing)
+    SensorNode-->>DirectTransport: USB Serial Output (JSON String tiap 2 detik, 115200 Baud)
+    DirectTransport-->>DashboardWeb: Web Serial API Browser / Local WebSocket Bridge
+    DashboardWeb->>DashboardWeb: Live Pipeline -> Update Node NODE-05 (Kampus Tuguran)
+    DashboardWeb->>DashboardWeb: Update Terminal Log Console & Indikator Sensor Real-Time
+    end
+
+    %% --------------------------------------------------------------------------
+    %% FASE 3: OPTIMASI RUTE PENGANGKUTAN ARMADA
+    %% --------------------------------------------------------------------------
+    rect rgb(250, 246, 238)
+    Note over Database,DashboardWeb: 3. Optimasi Rute Pengangkutan Sampah (CVRP Execution)
+    DashboardWeb->>Database: Query Titik TPS Berstatus Siaga (≥50%) & Prioritas (≥75%)
+    Database-->>RoutingSolver: Data Spasial Titik, Geometri PostGIS, & Estimasi Keterisian
+    RoutingSolver->>RoutingSolver: Eksekusi CVRP Berbasis Matriks Jarak Jaringan Jalan
+    RoutingSolver-->>DashboardWeb: Return Urutan Rute Optimal (Pool DLH -> TPS -> TPSA -> Pool DLH)
+    DashboardWeb->>DashboardWeb: Render Polyline Rute Armada di Peta Leaflet & Timeline Logistik
+    end
+`;
+
+// ==============================================================================
+// 3. FUNGSI EXPORT & VIEWER HTML OTOMATIS
+// ==============================================================================
+
+/**
+ * Menghasilkan dokumen HTML lengkap mandiri dengan Mermaid.js CDN
+ * sehingga diagram dapat langsung dibuka dan dilihat di browser web.
+ *
+ * @returns {string} Konten file HTML
+ */
+export function generateHtmlViewer() {
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SUGENG - Alur Integrasi Data Arsitektur IoT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #f8faf8;
+      --surface: #ffffff;
+      --ink: #1f3025;
+      --muted: #5e7064;
+      --line: #dbe4dc;
+      --green: #176b49;
+      --green-soft: #edf5f0;
+      --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      padding: 32px 24px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 30px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 20px;
+    }
+    .badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green);
+      background: var(--green-soft);
+      border: 1px solid #c8ded0;
+      padding: 3px 9px;
+      border-radius: 5px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #16291e;
+      letter-spacing: -0.02em;
+    }
+    p.lead {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 6px;
+      max-width: 800px;
+    }
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 3px 12px rgba(23, 40, 30, 0.04);
+      overflow-x: auto;
+    }
+    .section-card h2 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #1b3524;
+    }
+    .section-card p.desc {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .mermaid {
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">Arsitektur Terpadu Sistem SUGENG</div>
+      <h1>Alur Integrasi Data: Edge IoT ke Dashboard Web SIG</h1>
+      <p class="lead">Pemodelan transmisi data telemetri, middleware ingesti berkecepatan tinggi, persistensi spasial PostGIS, hingga pemetaan rute dinamis CVRP Kota Magelang.</p>
+    </header>
+
+    <div class="section-card">
+      <h2>1. Diagram Alur Integrasi End-to-End (5-Tier Architecture)</h2>
+      <p class="desc">Menggambarkan keterhubungan antara sensor fisik di TPS, modul komputasi ESP32, gateway Elysia.js, database Supabase PostGIS, solver OR-Tools, dan dashboard SIG.</p>
+      <div class="mermaid">
+${alurIntegrasiFlowchart.trim()}
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h2>2. Diagram Urutan Interaksi & Sinkronisasi Real-Time (Sequence)</h2>
+      <p class="desc">Menggambarkan tahapan alur pengiriman data nirkabel berkala, direct USB testing untuk demonstrasi laboratorium, serta pemicuan kalkulasi rute armada.</p>
+      <div class="mermaid">
+${alurIntegrasiSequence.trim()}
+      </div>
+    </div>
+
+    <footer>
+      SUGENG Kota Magelang · Universitas Tidar · Dinas Lingkungan Hidup
+    </footer>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'neutral',
+      fontFamily: 'DM Sans, sans-serif',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
+  </script>
+</body>
+</html>`;
+}
+
+// ==============================================================================
+// 4. EKSEKUSI MANDIRI (CLI EXPORT)
+// ==============================================================================
+
+if (typeof process !== 'undefined' && process.argv && process.argv[1]?.endsWith('alur_integrasi_data.js')) {
+  import('fs').then(({ writeFileSync }) => {
+    import('path').then(({ resolve, dirname }) => {
+      const targetHtml = resolve(dirname(process.argv[1]), 'alur_integrasi_data.html');
+      writeFileSync(targetHtml, generateHtmlViewer(), 'utf-8');
+      console.log('✓ File viewer HTML berhasil dibuat:', targetHtml);
+    });
+  });
+}
+
+// Kompatibilitas CommonJS
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    alurIntegrasiFlowchart,
+    alurIntegrasiSequence,
+    generateHtmlViewer,
+  };
+}
