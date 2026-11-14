@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f7f5">
+<title>SUGENG — Smart Waste Management | Poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#171816;--muted:#686b66;--line:#d9dbd5;--paper:#fff;--wash:#f4f4f1;--soft:#eaeae5;--mono:'IBM Plex Mono',monospace;--sans:'DM Sans',Arial,sans-serif}
+*{box-sizing:border-box}html{background:#e9e9e5}body{margin:0;padding:28px 18px 60px;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+.toolbar{max-width:1120px;margin:0 auto 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#fff;border:1px solid var(--line);border-radius:8px}.toolbar strong{font-size:13px;letter-spacing:.02em}.toolbar small{font:10px var(--mono);color:var(--muted);margin-left:8px}.actions{display:flex;gap:8px}.actions button{border:1px solid var(--ink);background:var(--ink);color:#fff;padding:9px 13px;border-radius:4px;font:600 11px var(--sans);cursor:pointer}.actions button.secondary{background:#fff;color:var(--ink)}
+.poster{width:min(100%,1120px);margin:auto;background:var(--paper);padding:48px 54px 34px;box-shadow:0 12px 42px #17181612;}
+.kicker,.eyebrow,.section-index,.meta,.mono{font-family:var(--mono);text-transform:uppercase;letter-spacing:.09em}.masthead{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding-bottom:24px;border-bottom:2px solid var(--ink)}.kicker{font-size:10px;color:var(--muted);margin-bottom:15px}.brandline{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}.brand{font-size:clamp(52px,8vw,88px);font-weight:900;line-height:.82;letter-spacing:-.085em}.brand-desc{font-size:14px;font-weight:700;max-width:260px;line-height:1.2}.intro{max-width:700px;margin-top:17px;color:#4d504b;font-size:13px;line-height:1.65}.issue{text-align:right;font:10px/1.8 var(--mono);color:var(--muted);white-space:nowrap}.issue b{display:block;color:var(--ink);font-size:12px}
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;padding:26px 0;border-bottom:1px solid var(--line)}.hero-title{font-size:clamp(27px,4vw,43px);line-height:1.05;letter-spacing:-.055em;font-weight:800;max-width:570px}.hero-title em{font-style:normal;text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:7px}.hero-copy{font-size:12px;color:var(--muted);line-height:1.65;margin-top:14px;max-width:570px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:0;border-left:1px solid var(--line);align-content:center}.stat{padding:10px 0 12px 20px;border-bottom:1px solid var(--line)}.stat:nth-last-child(-n+2){border-bottom:0}.stat-num{font-size:29px;letter-spacing:-.06em;font-weight:800;line-height:1}.stat-label{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.35}
+.section{padding:24px 0;border-bottom:1px solid var(--line)}.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:15px}.section-title{font-size:17px;font-weight:800;letter-spacing:-.035em}.section-index{font-size:10px;color:var(--muted);margin-right:9px}.meta{font-size:9px;color:var(--muted);text-align:right}
+.hardware{display:grid;grid-template-columns:240px 1fr;gap:22px;align-items:stretch}.bin-panel{background:var(--wash);padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px}.bin-panel svg{width:100%;max-width:205px;height:auto}.bin-caption{font:9px var(--mono);color:var(--muted);margin-top:8px;text-align:center}.specs{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}.spec{padding:12px 0;border-bottom:1px solid var(--line)}.spec:nth-last-child(-n+2){border-bottom:0}.spec h3{font-size:12px;margin:0 0 5px;font-weight:800}.spec p{font-size:10.5px;line-height:1.55;color:var(--muted);margin:0}.pin{font:9px var(--mono);color:var(--muted);display:block;margin-bottom:5px}
+.compare{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line)}.compare article{padding:17px 19px}.compare article+article{border-left:1px solid var(--line);background:var(--wash)}.compare-label{font:9px var(--mono);color:var(--muted);letter-spacing:.08em}.compare h3{font-size:15px;letter-spacing:-.025em;margin:7px 0 12px}.compare ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}.compare li{font-size:10.5px;line-height:1.5;color:#555852;padding-left:15px;position:relative}.compare li:before{content:'—';position:absolute;left:0;color:var(--ink);font-weight:700}
+.route{display:grid;grid-template-columns:1.3fr .7fr;gap:18px}.route-map{background:var(--wash);padding:12px;min-height:210px;display:flex;align-items:center}.route-map svg{width:100%;height:auto}.route-info{display:flex;flex-direction:column;justify-content:space-between;gap:12px}.route-list{display:grid;gap:8px}.route-item{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:10px;line-height:1.4}.route-num{width:20px;height:20px;border:1px solid var(--ink);display:grid;place-items:center;font:9px var(--mono)}.route-item b{display:block;font-size:10.5px}.route-item span:last-child{color:var(--muted)}.route-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}.metric{background:var(--wash);padding:11px}.metric b{font-size:16px;display:block;letter-spacing:-.04em}.metric span{font-size:9px;color:var(--muted)}
+.arch{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line)}.arch article{padding:14px;border-right:1px solid var(--line)}.arch article:last-child{border:0}.arch .eyebrow{font-size:8px;color:var(--muted)}.arch h3{font-size:12px;margin:8px 0 6px}.arch p{font-size:9.5px;line-height:1.5;color:var(--muted);margin:0}
+.impact{display:grid;grid-template-columns:repeat(4,1fr);background:var(--ink);color:#fff;margin-top:24px}.impact article{padding:18px 15px;border-right:1px solid #ffffff30}.impact article:last-child{border:0}.impact b{font-size:27px;letter-spacing:-.06em;display:block}.impact span{font-size:9px;line-height:1.4;color:#d0d1cc;display:block;margin-top:5px}
+.footer{display:grid;grid-template-columns:1.2fr 1fr;gap:20px;padding-top:20px}.institution strong{font-size:10px;display:block}.institution span{display:block;font-size:9px;color:var(--muted);line-height:1.6;margin-top:3px}.team{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.person small{font:8px var(--mono);color:var(--muted);display:block;margin-bottom:4px}.person b{font-size:9px;display:block}.person span{font:8px var(--mono);color:var(--muted)}.footnote{margin-top:15px;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font:8px var(--mono);color:var(--muted);letter-spacing:.04em}
+@media(max-width:760px){body{padding:12px 8px 30px}.poster{padding:25px 20px}.masthead{grid-template-columns:1fr}.issue{text-align:left}.hero,.hardware,.route,.footer{grid-template-columns:1fr}.stats{border-left:0;border-top:1px solid var(--line);padding-top:8px}.bin-panel{min-height:220px}.arch{grid-template-columns:1fr 1fr}.arch article:nth-child(2){border-right:0}.arch article:nth-child(-n+2){border-bottom:1px solid var(--line)}.impact{grid-template-columns:1fr 1fr}.impact article:nth-child(2){border-right:0}.impact article:nth-child(-n+2){border-bottom:1px solid #ffffff30}.team{grid-template-columns:1fr 1fr}.section-head{align-items:flex-start;flex-direction:column}.meta{text-align:left}.toolbar{align-items:flex-start;flex-direction:column}.specs{grid-template-columns:1fr}.spec:nth-last-child(2){border-bottom:1px solid var(--line)}}
+@media print{@page{size:A3 portrait;margin:8mm}html,body{background:#fff!important;padding:0!important}.toolbar{display:none!important}.poster{width:100%;max-width:none;padding:0;box-shadow:none}.section,.hero,.masthead,.footer,.impact,.hardware,.compare,.route,.arch{break-inside:avoid;page-break-inside:avoid}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
+</style>
+</head>
+<body>
+<div class="toolbar"><div><strong>SUGENG / POSTER PRESENTATION</strong><small>MONOCHROME EDITION · A3 PORTRAIT</small></div><div class="actions"><button class="secondary" onclick="window.scrollTo({top:0,behavior:'smooth'})">Kembali ke atas</button><button onclick="window.print()">Cetak / Simpan PDF ↗</button></div></div>
+<main class="poster">
+<header class="masthead">
+  <div>
+    <div class="kicker">Universitas Tidar × Dinas Lingkungan Hidup Kota Magelang · 2026</div>
+    <div class="brandline"><div class="brand">SUGENG</div><div class="brand-desc">Sistem Unggulan Pengelolaan &amp; Monitoring Sampah</div></div>
+    <p class="intro">Sistem pemantauan keterisian tempat penampungan sementara (TPS) dan deteksi gas hasil pembusukan sampah berbasis <i>Internet of Things</i> (IoT), terintegrasi dengan optimasi rute armada menggunakan algoritma <i>Capacitated Vehicle Routing Problem</i> (CVRP).</p>
+  </div>
+  <div class="issue"><b>SMART WASTE<br>MANAGEMENT</b>PROJECT OVERVIEW<br>MAGELANG, INDONESIA<br>VOL. 01 / 2026</div>
+</header>
+<section class="hero">
+  <div><h1 class="hero-title">Mengelola sampah dengan data. <em>Merespons</em> sebelum meluap.</h1><p class="hero-copy">SUGENG menghubungkan sensor pada wadah TPS, platform pemrosesan data, pemantauan spasial, dan perencanaan rute pengangkutan dalam satu ekosistem terpadu.</p></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-num">65–76</div><div class="stat-label">Ton sampah per hari yang menjadi beban TPSA Banyuurip</div></div>
+    <div class="stat"><div class="stat-num">2028</div><div class="stat-label">Proyeksi habis kapasitas TPSA menurut materi proyek</div></div>
+    <div class="stat"><div class="stat-num">35–40%</div><div class="stat-label">Potensi pemborosan BBM pada pola pengangkutan konvensional</div></div>
+    <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Pemantauan kondisi TPS melalui telemetri</div></div>
+  </div>
+</section>
+<section class="section">
+ <div class="section-head"><h2 class="section-title"><span class="section-index">01 /</span>Node smart bin &amp; sensor</h2><span class="meta">HDPE CONTAINER · 120 LITER</span></div>
+ <div class="hardware">
+  <div class="bin-panel">
+   <svg viewBox="0 0 220 300" role="img" aria-label="Ilustrasi wadah smart bin dengan panel surya dan sensor">
+    <g fill="none" stroke="#171816" stroke-width="2">
+     <rect x="65" y="12" width="90" height="22" rx="2" fill="#171816"/><path d="M87 12v22M110 12v22M133 12v22M65 23h90" stroke="#fff" stroke-width="1"/>
+     <path d="M85 39h50M91 39v8h38v-8"/><path d="M35 51h150l-9 17H44z" fill="#d9dbd5"/><path d="M47 69h126l-12 190H59z" fill="#f4f4f1"/>
+     <path d="M54 112h112M57 157h106M60 202h100" stroke="#b7b9b2"/>
+     <path d="M56 160q54-13 108 0l-10 99H66z" fill="#d0d1cc" stroke="#777a73"/>
+     <path d="M57 160q53-13 107 0" stroke="#171816" stroke-dasharray="4 4"/>
+     <circle cx="110" cy="75" r="5" fill="#171816"/><path d="M99 88q11 9 22 0M94 98q16 13 32 0" stroke="#777a73"/>
+     <rect x="80" y="190" width="60" height="20" rx="2" fill="#fff"/><text x="110" y="204" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#171816" stroke="none">78% FULL</text>
+     <path d="M53 259h114"/><circle cx="57" cy="271" r="12" fill="#171816"/><circle cx="163" cy="271" r="12" fill="#171816"/><circle cx="57" cy="271" r="4" fill="#fff" stroke="none"/><circle cx="163" cy="271" r="4" fill="#fff" stroke="none"/>
+    </g>
+   </svg>
+   <div class="bin-caption">KONSEP NODE SENSORIK · ILUSTRASI</div>
+  </div>
+  <div class="specs">
+   <article class="spec"><span class="pin">GPIO 12 / 13</span><h3>JSN-SR04T · Ultrasonik</h3><p>Mengukur jarak permukaan sampah pada rentang 20–95 cm untuk estimasi tingkat keterisian wadah.</p></article>
+   <article class="spec"><span class="pin">GPIO 34 · ADC1</span><h3>MQ-135 · Deteksi gas</h3><p>Memantau indikasi gas terkait pembusukan, termasuk amonia (NH₃), sebagai parameter kualitas udara.</p></article>
+   <article class="spec"><span class="pin">GPIO 35 · ADC1</span><h3>MQ-4 · Metana</h3><p>Mendeteksi indikasi keberadaan gas metana (CH₄) pada tumpukan sampah organik.</p></article>
+   <article class="spec"><span class="pin">GPIO 14</span><h3>DHT22 · Lingkungan</h3><p>Mengukur suhu dan kelembapan mikroklimat di sekitar bagian dalam wadah.</p></article>
+   <article class="spec"><span class="pin">6V · CN3065 · 18650</span><h3>Solar energy harvesting</h3><p>Panel surya dan baterai Li-Ion mendukung suplai daya mandiri untuk node di area luar ruang.</p></article>
+   <article class="spec"><span class="pin">ESP32 · FR120N</span><h3>Kontrol &amp; manajemen daya</h3><p>ESP32 mengakuisisi data, melakukan pemrosesan awal, dan mengatur siklus deep sleep serta pemanasan sensor.</p></article>
+  </div>
+ </div>
+</section>
+<section class="section">
+ <div class="section-head"><h2 class="section-title"><span class="section-index">02 /</span>Dari pengangkutan statis ke respons berbasis data</h2><span class="meta">OPERATIONAL MODEL</span></div>
+ <div class="compare">
+  <article><div class="compare-label">MODEL KONVENSIONAL</div><h3>Jadwal tetap, informasi terbatas</h3><ul><li>Armada bergerak berdasarkan jadwal tanpa mengetahui kondisi aktual TPS.</li><li>TPS yang belum penuh tetap dapat didatangi sehingga waktu dan BBM berpotensi terbuang.</li><li>Lonjakan volume sampah berisiko terlambat diketahui dan ditangani.</li><li>Urutan pengangkutan belum sepenuhnya mempertimbangkan prioritas dan kapasitas.</li></ul></article>
+  <article><div class="compare-label">MODEL SUGENG</div><h3>Pemantauan, prioritas, optimasi</h3><ul><li>Data keterisian dan sensor lingkungan dikirim ke platform secara berkala.</li><li>TPS diklasifikasikan berdasarkan status keterisian untuk membantu menentukan prioritas.</li><li>Google OR-Tools digunakan untuk menyusun rute pengangkutan dengan pendekatan CVRP.</li><li>Dashboard menyajikan status node, telemetri, dan visualisasi rute dalam satu tampilan.</li></ul></article>
+ </div>
+</section>
+<section class="section">
+ <div class="section-head"><h2 class="section-title"><span class="section-index">03 /</span>Optimasi rute armada</h2><span class="meta">GOOGLE OR-TOOLS · CVRP</span></div>
+ <div class="route">
+  <div class="route-map"><svg viewBox="0 0 560 230" role="img" aria-label="Skema konseptual rute dari Pool DLH ke TPS prioritas dan TPSA Banyuurip">
+   <g stroke="#d2d3ce" stroke-width="2" stroke-dasharray="4 5"><path d="M25 45h510M25 115h510M25 185h510M90 20v190M230 20v190M370 20v190M500 20v190"/></g>
+   <path d="M72 65L190 88L300 125L420 165L500 65L72 65" fill="none" stroke="#171816" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+   <g font-family="DM Sans" text-anchor="middle"><circle cx="72" cy="65" r="10" fill="#171816"/><text x="72" y="39" font-size="11" font-weight="700" fill="#171816">POOL DLH</text><circle cx="190" cy="88" r="8" fill="#fff" stroke="#171816" stroke-width="2"/><text x="190" y="112" font-size="10" fill="#171816">TPS Tuguran</text><circle cx="300" cy="125" r="8" fill="#fff" stroke="#171816" stroke-width="2"/><text x="300" y="149" font-size="10" fill="#171816">TPS prioritas</text><circle cx="420" cy="165" r="8" fill="#fff" stroke="#171816" stroke-width="2"/><text x="420" y="189" font-size="10" fill="#171816">TPS terpilih</text><rect x="489" y="54" width="22" height="22" fill="#171816"/><text x="500" y="39" font-size="11" font-weight="700" fill="#171816">TPSA</text></g>
+   <text x="280" y="218" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" fill="#686b66">SKEMA KONSEPTUAL — BUKAN PETA JALAN BERSKALA</text>
+  </svg></div>
+  <div class="route-info"><div class="route-list">
+   <div class="route-item"><span class="route-num">01</span><span><b>Pool DLH Kota Magelang</b><span>Depot awal dan akhir · −7.444152, 110.230185</span></span></div>
+   <div class="route-item"><span class="route-num">02</span><span><b>TPS Kampus Tuguran UNTIDAR</b><span>Titik uji · −7.459694, 110.216861</span></span></div>
+   <div class="route-item"><span class="route-num">03</span><span><b>TPSA Banyuurip</b><span>Lokasi bongkar muatan · −7.498800, 110.231200</span></span></div>
+  </div><div class="route-metrics"><div class="metric"><b>1.000–1.500 kg</b><span>Kapasitas truk pada materi proyek</span></div><div class="metric"><b>CVRP</b><span>Optimasi rute berbatas kapasitas</span></div></div></div>
+ </div>
+</section>
+<section class="section">
+ <div class="section-head"><h2 class="section-title"><span class="section-index">04 /</span>Arsitektur ekosistem digital</h2><span class="meta">END-TO-END DATA FLOW</span></div>
+ <div class="arch">
+  <article><div class="eyebrow">TIER 01 · PERCEPTION</div><h3>Node IoT</h3><p>ESP32 dan sensor ultrasonik, gas, serta suhu–kelembapan pada wadah TPS.</p></article>
+  <article><div class="eyebrow">TIER 02 · TRANSPORT</div><h3>Transmisi data</h3><p>HTTP POST berbasis JSON untuk telemetri lapangan dan USB Serial untuk pengujian.</p></article>
+  <article><div class="eyebrow">TIER 03 · INGESTION</div><h3>Backend &amp; database</h3><p>Elysia.js, Bun, validasi TypeBox, Supabase PostgreSQL, dan PostGIS.</p></article>
+  <article><div class="eyebrow">TIER 04 · PRESENTATION</div><h3>Command center</h3><p>Astro, React, Leaflet.js, indikator wadah, telemetri, dan rute CVRP.</p></article>
+ </div>
+</section>
+<div class="impact">
+ <article><b>97%</b><span>Akurasi pembacaan sensor ultrasonik — target/spesifikasi pada materi proyek</span></article>
+ <article><b>35%</b><span>Estimasi potensi penghematan BBM armada</span></article>
+ <article><b>9 titik</b><span>Cakupan TPS strategis yang direncanakan untuk dipantau</span></article>
+ <article><b>ZERO</b><span>Target mengurangi kejadian luapan sampah dan dampak lingkungan</span></article>
+</div>
+<footer class="footer">
+ <div class="institution"><strong>UNIVERSITAS TIDAR · FAKULTAS TEKNIK · TEKNOLOGI INFORMASI</strong><span>Proyek Akhir Mata Kuliah Internet of Things (IoT) · Tahun Akademik 2026/2027</span><span>Bekerja sama dengan Dinas Lingkungan Hidup (DLH) Kota Magelang</span></div>
+ <div class="team">
+  <div class="person"><small>KETUA TIM</small><b>Farrel Apriandry Ciu</b><span>2430506056</span></div>
+  <div class="person"><small>ANGGOTA</small><b>Nabila Syafiqah Z. F.</b><span>2430506058</span></div>
+  <div class="person"><small>DOSEN PENGAMPU</small><b>M. Maksum Hidayat, M.Kom</b><span>199506302025061003</span></div>
+ </div>
+</footer>
+<div class="footnote"><span>SUGENG / SMART WASTE MANAGEMENT</span><span>INTEGRATED IOT · GIS · ROUTE OPTIMIZATION</span></div>
+</main>
+</body>
+</html>
