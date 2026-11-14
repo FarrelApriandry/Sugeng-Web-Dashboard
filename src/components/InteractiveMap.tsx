@@ -219,7 +219,7 @@ export const InteractiveMap: React.FC<Props> = ({
       });
 
       const dm = L.marker([POOL_DEPOT.lat, POOL_DEPOT.lng], { icon: depotIcon }).bindPopup(
-        `<div class="map-popup-name">${POOL_DEPOT.name}</div><div class="map-popup-detail">Titik awal dan akhir skenario</div>`
+        `<div class="map-popup-name">${POOL_DEPOT.name}</div><div class="map-popup-detail">${POOL_DEPOT.address}</div><div class="map-popup-detail" style="font-family:var(--mono);font-size:8.5px;color:#176b49;margin-top:2px;">Titik awal & akhir armada · DD: -7.4681, 110.2435</div>`
       );
       const tm = L.marker([TPSA_BANYUURIP.lat, TPSA_BANYUURIP.lng], { icon: tpsaIcon }).bindPopup(
         `<div class="map-popup-name">${TPSA_BANYUURIP.name}</div><div class="map-popup-detail">Fasilitas pembuangan antara skenario</div>`
