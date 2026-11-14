@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SUGENG - Poster Inovasi Smart Waste Management Kota Magelang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..900;1,9..40,300..900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================================================
+       RESET & ROOT VARIABLES
+       ========================================================================== */
+    :root {
+      --primary: #124b33;
+      --primary-dark: #0a2d1e;
+      --primary-light: #1e704d;
+      --primary-soft: #eaf4ee;
+      --accent: #2e8b57;
+      --accent-gold: #c88a22;
+      --accent-danger: #c53030;
+      --surface: #ffffff;
+      --surface-subtle: #f8faf9;
+      --surface-card: #f2f6f4;
+      --ink-primary: #13241b;
+      --ink-secondary: #415549;
+      --ink-muted: #647a6d;
+      --border: #d4e2da;
+      --border-dark: #b6ccbf;
+      --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #e9eee9;
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      line-height: 1.45;
+      padding: 30px 20px 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ==========================================================================
+       ACTION TOOLBAR (SCREEN ONLY)
+       ========================================================================== */
+    .screen-toolbar {
+      width: 100%;
+      max-width: 1240px;
+      margin-bottom: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 16px rgba(18, 45, 30, 0.05);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .toolbar-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    .toolbar-title span.tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px solid #c2dbcb;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn-print {
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid var(--primary-dark);
+      box-shadow: 0 2px 6px rgba(18, 75, 51, 0.2);
+    }
+
+    .btn-print:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: var(--ink-secondary);
+      border: 1px solid var(--border-dark);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-card);
+      color: var(--primary);
+    }
+
+    /* ==========================================================================
+       POSTER MAIN CONTAINER (A3 PROPORTIONS 1 : 1.414)
+       ========================================================================== */
+    .poster {
+      width: 100%;
+      max-width: 1240px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 44px 48px;
+      box-shadow: 0 16px 48px rgba(15, 38, 25, 0.08);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Subtle decorative corner accent lines */
+    .poster::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 7px;
+      background: linear-gradient(90deg, #0a2d1e 0%, #1e704d 45%, #c88a22 85%, #124b33 100%);
+    }
+
+    /* ==========================================================================
+       1. HEADER & MASTHEAD
+       ========================================================================== */
+    .poster-header {
+      display: grid;
+      grid-template-columns: 140px 1fr auto;
+      align-items: center;
+      gap: 24px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .logo-frame {
+      width: 130px;
+      height: 130px;
+      border-radius: 14px;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(18, 45, 30, 0.05);
+    }
+
+    .logo-frame img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .header-text {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .header-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .header-eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: var(--primary);
+      border-radius: 50%;
+    }
+
+    .header-title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    h1.brand-name {
+      font-size: 44px;
+      font-weight: 900;
+      color: var(--primary-dark);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    span.brand-tagline {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ink-secondary);
+      letter-spacing: -0.01em;
+    }
+
+    p.header-subtitle {
+      font-size: 13.5px;
+      color: var(--ink-muted);
+      max-width: 720px;
+      line-height: 1.45;
+    }
+
+    .header-badge-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .badge-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 6px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      border: 1px solid #c2dbcb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-pill.alt {
+      background: #faf4e8;
+      color: #7d5006;
+      border-color: #ecdab5;
+    }
+
+    /* ==========================================================================
+       2. PROBLEM & CONTEXT BANNER
+       ========================================================================== */
+    .urgency-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .urgency-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    .urgency-card.highlight {
+      background: #fdf5f5;
+      border-color: #f0c3c3;
+    }
+
+    .urgency-card.highlight .card-stat {
+      color: var(--accent-danger);
+    }
+
+    .card-label {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+    }
+
+    .card-stat {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--primary-dark);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      line-height: 1.4;
+    }
+
+    /* ==========================================================================
+       SECTION HEADINGS
+       ========================================================================== */
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1.5px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: var(--primary);
+      color: #ffffff;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .section-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-muted);
+      font-weight: 600;
+    }
+
+    /* ==========================================================================
+       3. INFOGRAPHIC: SMART BIN ANATOMY (2 COLUMNS: SVG + CALLOUTS)
+       ========================================================================== */
+    .bin-infographic {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .bin-visual-wrap {
+      background: radial-gradient(circle at center, #edf5f0 0%, #ffffff 70%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .bin-visual-wrap svg {
+      width: 100%;
+      max-width: 280px;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 8px 18px rgba(15, 38, 25, 0.08));
+    }
+
+    .bin-caption {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    .bin-specs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .spec-item {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .spec-pin {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primary);
+      background: #ffffff;
+      border: 1px solid var(--border);
+      padding: 1px 7px;
+      border-radius: 4px;
+      width: fit-content;
+    }
+
+    .spec-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--ink-primary);
+    }
+
+    .spec-desc {
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+      line-height: 1.4;
+    }
+
+    /* ==========================================================================
+       4. COMPARISON: CONVENTIONAL VS SUGENG
+       ========================================================================== */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .compare-card {
+      border-radius: 12px;
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .compare-card.bad {
+      background: #fdfaf9;
+      border-color: #eed5ce;
+    }
+
+    .compare-card.good {
+      background: #f4faf6;
+      border-color: #b9dec8;
+    }
+
+    .compare-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-status {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .bad .badge-status {
+      background: #ffe3de;
+      color: #9c2718;
+      border: 1px solid #f5b3a6;
+    }
+
+    .good .badge-status {
+      background: #d4ebd9;
+      color: #0d5431;
+      border: 1px solid #a3d9b0;
+    }
+
+    .compare-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--ink-primary);
+    }
+
+    .compare-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .step-row {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .step-num {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      text-align: center;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ==========================================================================
+       5. CVRP ROUTE & LOGISTICS TOPOLOGY (MAGELANG MAP INFOGRAPHIC)
+       ========================================================================== */
+    .cvrp-section {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+    }
+
+    .map-canvas-card {
+      background: #f7faf8;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .map-canvas-card svg {
+      width: 100%;
+      height: auto;
+      max-height: 290px;
+      display: block;
+    }
+
+    .cvrp-info-pane {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .route-node-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .route-node-item {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11.5px;
+    }
+
+    .node-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .node-dot.depot { background: #2c5b88; }
+    .node-dot.tps { background: #176b49; }
+    .node-dot.tpsa { background: #c53030; }
+
+    .node-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .node-name {
+      font-weight: 700;
+      color: var(--ink-primary);
+    }
+
+    .node-coord {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--ink-muted);
+    }
+
+    .cvrp-stats-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .cvrp-stat-box {
+      background: var(--primary-soft);
+      border: 1px solid #c2dbcb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .cvrp-stat-val {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--primary-dark);
+    }
+
+    .cvrp-stat-lbl {
+      font-size: 10px;
+      color: var(--ink-secondary);
+      font-weight: 600;
+    }
+
+    /* ==========================================================================
+       6. 4-TIER PIPELINE FLOW
+       ========================================================================== */
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .pipe-step {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    .pipe-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .pipe-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink-primary);
+    }
+
+    .pipe-desc {
+      font-size: 11px;
+      color: var(--ink-secondary);
+      line-height: 1.35;
+    }
+
+    /* ==========================================================================
+       7. IMPACT METRICS BAR
+       ========================================================================== */
+    .impact-banner {
+      background: linear-gradient(135deg, #103b29 0%, #175e3f 100%);
+      border-radius: 14px;
+      padding: 24px 32px;
+      color: #ffffff;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .impact-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .impact-item:not(:last-child) {
+      border-right: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .impact-num {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #bbf7d0;
+    }
+
+    .impact-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #e2f1e8;
+      line-height: 1.3;
+    }
+
+    /* ==========================================================================
+       8. FOOTER & ACADEMIC CREDITS
+       ========================================================================== */
+    .poster-footer {
+      border-top: 1.5px solid var(--border);
+      padding-top: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .academic-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 11px;
+      color: var(--ink-secondary);
+    }
+
+    .academic-info strong {
+      color: var(--ink-primary);
+      font-size: 12px;
+    }
+
+    .team-info {
+      display: flex;
+      justify-content: flex-end;
+      gap: 20px;
+      font-size: 11px;
+    }
+
+    .team-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .team-col span.role {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .team-col span.name {
+      font-weight: 800;
+      color: var(--ink-primary);
+    }
+
+    .team-col span.npm {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--ink-muted);
+    }
+
+    /* ==========================================================================
+       PRINT & PDF RULES
+       ========================================================================== */
+    @media print {
+      @page {
+        size: A3 portrait;
+        margin: 8mm 10mm;
+      }
+
+      *, *:before, *:after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+
+      .screen-toolbar {
+        display: none !important;
+      }
+
+      .poster {
+        max-width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        gap: 18px !important;
+      }
+
+      .poster::before {
+        height: 6px !important;
+      }
+
+      section, 
+      .poster-header, 
+      .poster-footer, 
+      .urgency-grid, 
+      .bin-infographic, 
+      .comparison-grid, 
+      .cvrp-section, 
+      .pipeline-grid, 
+      .impact-banner, 
+      .urgency-card,
+      .spec-item, 
+      .compare-card, 
+      .pipe-step,
+      .route-node-item {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      body.print-fit-single .poster {
+        transform: scale(0.67) !important;
+        transform-origin: top center !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen Action Toolbar -->
+  <div class="screen-toolbar">
+    <div class="toolbar-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+      Poster Promosi Inovasi SUGENG (A3/A4 Ready)
+      <span class="tag">HTML + SVG High-DPI</span>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn-action btn-print" onclick="window.print()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+        Cetak / Ekspor ke PDF
+      </button>
+      <button class="btn-action btn-secondary" onclick="toggleFitSinglePage()" id="fit-page-btn" title="Ganti antara mode 2 halaman atau 1 halaman pas untuk cetak">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+        <span id="fit-page-btn-text">Cetak: Standar (2 Halaman)</span>
+      </button>
+      <button class="btn-action btn-secondary" onclick="toggleZoom()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>
+        <span id="zoom-btn-text">Perbesar Poster</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Poster Canvas Container -->
+  <main class="poster" id="poster-root">
+
+    <!-- 1. Header & Identity -->
+    <header class="poster-header">
+      <div class="logo-frame">
+        <img src="design/Logo_SUGENG.png" alt="Logo Resmi SUGENG" onerror="this.onerror=null; this.src='Logo_SUGENG.png';">
+      </div>
+      <div class="header-text">
+        <div class="header-eyebrow">
+          PROYEK AKHIR RISET IoT 2026 · UNIVERSITAS TIDAR × DLH KOTA MAGELANG
+        </div>
+        <div class="header-title-wrap">
+          <h1 class="brand-name">SUGENG</h1>
+          <span class="brand-tagline">Sistem Unggulan Pengelolaan & Monitoring Sampah</span>
+        </div>
+        <p class="header-subtitle">
+          Inovasi pemantauan keterisian TPS dan deteksi pembusukan limbah organik berbasis <i>Internet of Things</i> (IoT), didukung optimasi rute armada pengangkut menggunakan algoritma <i>Capacitated Vehicle Routing Problem</i> (CVRP).
+        </p>
+      </div>
+      <div class="header-badge-box">
+        <span class="badge-pill">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2a8 8 0 00-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 00-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+          PostGIS EPSG:4326
+        </span>
+        <span class="badge-pill alt">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Telemetri Real-Time
+        </span>
+      </div>
+    </header>
+
+    <!-- 2. Urgency & Background Problem -->
+    <section>
+      <div class="urgency-grid">
+        <div class="urgency-card highlight">
+          <span class="card-label">Krisis Kapasitas TPSA</span>
+          <div class="card-stat">65–76 Ton/Hari</div>
+          <p class="card-desc">Volume buangan limbah padat perkotaan yang membebani TPSA Banyuurip. Fasilitas operasional sejak 1995 ini telah mengalami kondisi kelebihan beban (*overload*) dan diproyeksikan habis kapasitasnya pada 2028.</p>
+        </div>
+        <div class="urgency-card">
+          <span class="card-label">Kelemahan Konvensional</span>
+          <div class="card-stat">Jadwal Buta & Statis</div>
+          <p class="card-desc">Pengangkutan sampah manual tanpa informasi kepenuhan memicu pemborosan konsumsi BBM truk hingga 35–40%, waktu tempuh terbuang, dan keterlambatan penanganan TPS yang meluap (*overflow*).</p>
+        </div>
+        <div class="urgency-card">
+          <span class="card-label">Dampak Lingkungan & Warga</span>
+          <div class="card-stat">Polusi Bau & Lindi</div>
+          <p class="card-desc">Sampah organik menumpuk memicu emisi gas Amonia (NH₃) berbau busuk, gas Metana (CH₄) mudah terbakar, serta rembesan cairan lindi (*leachate*) yang mencemari air tanah pemukiman warga.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Main Infographic 1: Smart Bin Hardware Anatomy -->
+    <section>
+      <div class="section-head">
+        <h2 class="section-title">
+          <span class="section-num">1</span>
+          Anatomi Fisik Node Smart Bin TPS (Wadah HDPE 120L)
+        </h2>
+        <span class="section-meta">Multi-Sensor Fusion & Solar Energy Autonomous</span>
+      </div>
+
+      <div class="bin-infographic">
+        <!-- SVG Illustration of Smart Bin -->
+        <div class="bin-visual-wrap">
+          <svg viewBox="0 0 260 360" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Ilustrasi Wadah Smart Bin SUGENG">
+            <!-- Background Halo -->
+            <circle cx="130" cy="180" r="110" fill="#e8f4ed" opacity="0.6"/>
+
+            <!-- Solar Panel on Lid -->
+            <rect x="75" y="24" width="110" height="26" rx="4" fill="#1b2e3d" stroke="#124b33" stroke-width="2"/>
+            <line x1="102" y1="24" x2="102" y2="50" stroke="#486581" stroke-width="1.5"/>
+            <line x1="130" y1="24" x2="130" y2="50" stroke="#486581" stroke-width="1.5"/>
+            <line x1="158" y1="24" x2="158" y2="50" stroke="#486581" stroke-width="1.5"/>
+            <line x1="75" y1="37" x2="185" y2="37" stroke="#486581" stroke-width="1.5"/>
+            <!-- Solar Rays -->
+            <path d="M130 8L130 18M105 11L110 20M155 11L150 20" stroke="#c88a22" stroke-width="2" stroke-linecap="round"/>
+
+            <!-- Bin Handle -->
+            <path d="M100 52H160" stroke="#526659" stroke-width="5" stroke-linecap="round"/>
+            <path d="M106 52V62H154V52" fill="#d9e5dc" stroke="#8da394" stroke-width="2"/>
+
+            <!-- Bin Lid -->
+            <path d="M38 64H222L212 84H48L38 64Z" fill="#1e704d" stroke="#0a2d1e" stroke-width="2"/>
+            <rect x="32" y="62" width="196" height="6" rx="2" fill="#2e8b57"/>
+
+            <!-- Bin Body -->
+            <path d="M52 86H208L192 310H68L52 86Z" fill="#2b6e49" stroke="#0a2d1e" stroke-width="2"/>
+            <!-- Body Ribs / Reinforcement -->
+            <path d="M62 110H198M66 160H194M70 210H190M74 260H186" stroke="#175034" stroke-width="2.5" stroke-linecap="round"/>
+
+            <!-- Trash Fill Level Indicator (Simulated Fill Level 78%) -->
+            <clipPath id="bin-cut">
+              <path d="M56 90H204L188 306H72L56 90Z"/>
+            </clipPath>
+            <g clip-path="url(#bin-cut)">
+              <!-- Waste Fill Mass -->
+              <path d="M60 145Q130 135 200 145L190 310H70L60 145Z" fill="#8c5836" opacity="0.88"/>
+              <!-- Fill Level Surface Line -->
+              <path d="M60 145Q130 135 200 145" stroke="#c53030" stroke-width="3" stroke-dasharray="4 3"/>
+            </g>
+
+            <!-- Ultrasonic Waves Emitted (JSN-SR04T) -->
+            <circle cx="130" cy="88" r="8" fill="#124b33" stroke="#ffffff" stroke-width="1.5"/>
+            <path d="M116 102Q130 110 144 102" stroke="#3b82f6" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M108 116Q130 126 152 116" stroke="#3b82f6" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M100 130Q130 142 160 130" stroke="#3b82f6" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+            <!-- Gas Emitting (MQ-135 / MQ-4) -->
+            <path d="M80 180Q85 165 80 150Q75 135 85 120" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.8"/>
+            <path d="M180 180Q175 165 180 150Q185 135 175 120" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.8"/>
+
+            <!-- Wheels & Bottom Axle -->
+            <rect x="58" y="306" width="144" height="6" fill="#13241b"/>
+            <circle cx="56" cy="316" r="18" fill="#2d3748" stroke="#1a202c" stroke-width="3"/>
+            <circle cx="56" cy="316" r="6" fill="#a0aec0"/>
+            <circle cx="204" cy="316" r="18" fill="#2d3748" stroke="#1a202c" stroke-width="3"/>
+            <circle cx="204" cy="316" r="6" fill="#a0aec0"/>
+
+            <!-- Status Gauge Badge on Bin -->
+            <rect x="95" y="215" width="70" height="26" rx="6" fill="#ffffff" stroke="#124b33" stroke-width="1.5"/>
+            <text x="130" y="232" font-family="'IBM Plex Mono', monospace" font-size="11" font-weight="700" fill="#c53030" text-anchor="middle">78% PENUH</text>
+          </svg>
+          <div class="bin-caption">Wadah Uji Standar TPS: HDPE 120 Liter</div>
+        </div>
+
+        <!-- Technical Callout Specifications Grid -->
+        <div class="bin-specs-grid">
+          <div class="spec-item">
+            <span class="spec-pin">GPIO 12 (Trig) | GPIO 13 (Echo)</span>
+            <div class="spec-title">Sensor JSN-SR04T (IP67)</div>
+            <p class="spec-desc">Transduser ultrasonik kedap air berstandar industri. Mengukur jarak permukaan tumpukan sampah (rentang 20–95 cm) dengan akurasi 97% berbasis gelombang akustik 40 kHz.</p>
+          </div>
+
+          <div class="spec-item">
+            <span class="spec-pin">GPIO 34 ADC1 (SnO₂ Sensor)</span>
+            <div class="spec-title">Sensor Gas MQ-135 (Bau Busuk)</div>
+            <p class="spec-desc">Mendeteksi emisi pembusukan sampah organik basah, khususnya konsentrasi gas Amonia (NH₃ ≥ 60 ppm) dan senyawa sulfida sebelum menimbulkan polusi udara warga sekitar.</p>
+          </div>
+
+          <div class="spec-item">
+            <span class="spec-pin">GPIO 35 ADC1 (Combustible)</span>
+            <div class="spec-title">Sensor Gas MQ-4 (Gas Metana)</div>
+            <p class="spec-desc">Mendeteksi gas Metana (CH₄ ≥ 250 ppm) yang terperangkap dalam tumpukan limbah organik padat, memitigasi risiko potensi ledakan atau kebakaran dini pada lokasi TPS.</p>
+          </div>
+
+          <div class="spec-item">
+            <span class="spec-pin">GPIO 14 One-Wire Protocol</span>
+            <div class="spec-title">Sensor Lingkungan DHT22</div>
+            <p class="spec-desc">Memantau suhu (-40 s/d 80°C) dan kelembapan mikroklimat internal wadah secara stabil sebagai parameter koreksi laju dekomposisi biologis limbah padat.</p>
+          </div>
+
+          <div class="spec-item">
+            <span class="spec-pin">Panel 6V 1W + Modul CN3065</span>
+            <div class="spec-title">Solar Energy Harvesting</div>
+            <p class="spec-desc">Pengisian mandiri baterai Li-Ion 18650 (1S2P 3000–5000 mAh) berbasis teknologi Constant-Current/Constant-Voltage (CC/CV), memastikan operasional node aktif 24/7 di luar ruangan.</p>
+          </div>
+
+          <div class="spec-item">
+            <span class="spec-pin">ESP32 + MOSFET FR120N</span>
+            <div class="spec-title">Manajemen Daya & Pulsed Heating</div>
+            <p class="spec-desc">Saklar elektronik FR120N hanya memanaskan sensor gas sesaat sebelum sampling. Mikrokontroler masuk ke siklus Deep Sleep untuk menghemat arus hingga skala mikroampere (μA).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Comparison: Conventional vs SUGENG -->
+    <section>
+      <div class="section-head">
+        <h2 class="section-title">
+          <span class="section-num">2</span>
+          Komparasi Efisiensi Tata Kelola Persampahan
+        </h2>
+        <span class="section-meta">Transformasi Sistem Konvensional Menuju Logistik Cerdas</span>
+      </div>
+
+      <div class="comparison-grid">
+        <!-- Bad: Conventional -->
+        <div class="compare-card bad">
+          <div class="compare-head">
+            <span class="badge-status">Sistem Konvensional</span>
+            <div class="compare-title">Metode Penjadwalan Statis & Buta Data</div>
+          </div>
+          <div class="compare-steps">
+            <div class="step-row">
+              <span class="step-num">1</span>
+              <span><strong>Jadwal Kaku:</strong> Truk berangkat berdasarkan hari kerja tetap, tanpa mengetahui kondisi riil kepenuhan TPS di lapangan.</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">2</span>
+              <span><strong>Pemborosan BBM:</strong> Armada sering mendatangi TPS yang masih kosong atau setengah isi, membuang konsumsi solar dan jam kerja.</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">3</span>
+              <span><strong>Overflow Terlambat Ditangani:</strong> TPS dengan lonjakan sampah mendadak meluap ke jalan raya hingga membusuk dan mengganggu pemukiman.</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">4</span>
+              <span><strong>Antrean TPSA:</strong> Penumpukan truk sampah serentak di TPSA Banyuurip karena ketiadaan koordinasi muatan dan urutan ritasi.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Good: SUGENG -->
+        <div class="compare-card good">
+          <div class="compare-head">
+            <span class="badge-status">Sistem Cerdas SUGENG</span>
+            <div class="compare-title">Integrasi IoT & Rute Adaptif CVRP</div>
+          </div>
+          <div class="compare-steps">
+            <div class="step-row">
+              <span class="step-num">1</span>
+              <span><strong>Telemetri Real-Time:</strong> Status volume, estimasi liter, dan kadar gas busuk terkirim otomatis ke cloud setiap siklus.</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">2</span>
+              <span><strong>Filter Prioritas Otomatis:</strong> Hanya TPS berstatus Siaga (≥50%) dan Prioritas (≥75%) yang dijadwalkan untuk penjemputan armada.</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">3</span>
+              <span><strong>Rute Tertutup Optimal:</strong> Google OR-Tools CVRP menyusun lintasan armada terpendek berdasarkan jaringan jalan riil Kota Magelang.</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">4</span>
+              <span><strong>Efisiensi 35% Terukur:</strong> Pengurangan konsumsi bahan bakar, penurunan emisi gas buang armada, dan tercapainya target *Zero Overflow*.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. CVRP Route Optimization & Spatial Map -->
+    <section>
+      <div class="section-head">
+        <h2 class="section-title">
+          <span class="section-num">3</span>
+          Optimasi Rute Armada Pengangkut (Google OR-Tools CVRP)
+        </h2>
+        <span class="section-meta">Closed-Loop Routing: Pool DLH → TPS Siaga → TPSA Banyuurip</span>
+      </div>
+
+      <div class="cvrp-section">
+        <!-- Route Map Infographic SVG -->
+        <div class="map-canvas-card">
+          <svg viewBox="0 0 540 290" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Peta Rute Logistik CVRP Kota Magelang">
+            <!-- Road Network Lines Background -->
+            <path d="M40 70H500M80 140H480M40 210H500M120 40V260M280 40V260M420 40V260" stroke="#e0ece4" stroke-width="2.5" stroke-dasharray="4 4"/>
+            <!-- Major Arterial Road (Jl. Jend Sudirman / Mayjen Bambang Soegeng corridor) -->
+            <path d="M90 60L160 110L240 140L360 170L460 230" stroke="#cbdcd1" stroke-width="8" stroke-linecap="round"/>
+
+            <!-- Optimized CVRP Closed-Loop Polyline -->
+            <path d="M90 70 L190 95 L270 145 L370 160 L450 235 L380 250 L180 180 L90 70" 
+                  stroke="#176b49" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 4"/>
+            <path d="M90 70 L190 95 L270 145 L370 160 L450 235" 
+                  stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <!-- Node 1: Pool DLH (Start / Finish Depot) -->
+            <g transform="translate(90, 70)">
+              <circle cx="0" cy="0" r="14" fill="#2c5b88" stroke="#ffffff" stroke-width="3"/>
+              <rect x="-6" y="-6" width="12" height="12" fill="#ffffff" rx="2"/>
+              <!-- Label -->
+              <rect x="-70" y="-34" width="140" height="22" rx="4" fill="#152c42" opacity="0.9"/>
+              <text x="0" y="-20" font-family="'DM Sans', sans-serif" font-size="10" font-weight="800" fill="#ffffff" text-anchor="middle">POOL DLH (-7.4441, 110.2301)</text>
+            </g>
+
+            <!-- Node 2: TPS Riset Kampus Tuguran UNTIDAR -->
+            <g transform="translate(190, 95)">
+              <circle cx="0" cy="0" r="11" fill="#176b49" stroke="#ffffff" stroke-width="2.5"/>
+              <text x="0" y="4" font-family="'IBM Plex Mono', monospace" font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle">05</text>
+              <rect x="-60" y="16" width="120" height="20" rx="4" fill="#176b49" opacity="0.9"/>
+              <text x="0" y="30" font-family="'DM Sans', sans-serif" font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle">TPS KAMPUS TUGURAN</text>
+            </g>
+
+            <!-- Node 3: TPS Pasar Rejowinangun -->
+            <g transform="translate(270, 145)">
+              <circle cx="0" cy="0" r="11" fill="#c53030" stroke="#ffffff" stroke-width="2.5"/>
+              <text x="0" y="4" font-family="'IBM Plex Mono', monospace" font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle">02</text>
+              <rect x="-60" y="-28" width="120" height="20" rx="4" fill="#991b1b" opacity="0.9"/>
+              <text x="0" y="-14" font-family="'DM Sans', sans-serif" font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle">TPS REJOWINANGUN (88%)</text>
+            </g>
+
+            <!-- Node 4: TPS Cacaban -->
+            <g transform="translate(370, 160)">
+              <circle cx="0" cy="0" r="11" fill="#d97706" stroke="#ffffff" stroke-width="2.5"/>
+              <text x="0" y="4" font-family="'IBM Plex Mono', monospace" font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle">07</text>
+              <rect x="-50" y="16" width="100" height="20" rx="4" fill="#b45309" opacity="0.9"/>
+              <text x="0" y="30" font-family="'DM Sans', sans-serif" font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle">TPS CACABAN (64%)</text>
+            </g>
+
+            <!-- Node 5: TPSA Banyuurip (Disposal Site) -->
+            <g transform="translate(450, 235)">
+              <circle cx="0" cy="0" r="15" fill="#7f1d1d" stroke="#ffffff" stroke-width="3"/>
+              <polygon points="0,-7 7,6 -7,6" fill="#fef2f2"/>
+              <rect x="-65" y="-34" width="130" height="22" rx="4" fill="#7f1d1d" opacity="0.9"/>
+              <text x="0" y="-20" font-family="'DM Sans', sans-serif" font-size="10" font-weight="800" fill="#ffffff" text-anchor="middle">TPSA BANYUURIP (-7.4988)</text>
+            </g>
+
+            <!-- Compass / Orientation Icon -->
+            <g transform="translate(490, 40)">
+              <circle cx="0" cy="0" r="16" fill="#ffffff" stroke="#d4e2da" stroke-width="1.5"/>
+              <path d="M0 -12L4 0L0 -3L-4 0Z" fill="#c53030"/>
+              <path d="M0 12L4 0L0 3L-4 0Z" fill="#647a6d"/>
+              <text x="0" y="-14" font-family="'DM Sans', sans-serif" font-size="8" font-weight="800" fill="#13241b" text-anchor="middle">U</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- CVRP Parameters & Route Checklist -->
+        <div class="cvrp-info-pane">
+          <div>
+            <h3 style="font-size: 13.5px; font-weight: 800; color: var(--primary-dark); margin-bottom: 8px;">Katalog Titik Rute Terintegrasi</h3>
+            <div class="route-node-list">
+              <div class="route-node-item">
+                <span class="node-dot depot"></span>
+                <div class="node-details">
+                  <span class="node-name">Depot Awal & Akhir: Pool DLH Kota</span>
+                  <span class="node-coord">-7.444152, 110.230185 (Start Rute 07:00 WIB)</span>
+                </div>
+              </div>
+
+              <div class="route-node-item">
+                <span class="node-dot tps"></span>
+                <div class="node-details">
+                  <span class="node-name">Titik Uji: TPS Kampus Tuguran UNTIDAR</span>
+                  <span class="node-coord">-7.459694, 110.216861 (Volume Terpantau Realtime)</span>
+                </div>
+              </div>
+
+              <div class="route-node-item">
+                <span class="node-dot tpsa"></span>
+                <div class="node-details">
+                  <span class="node-name">Destinasi Bongkar: TPSA Banyuurip</span>
+                  <span class="node-coord">-7.498800, 110.231200 (Bongkar Muatan Truk)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Metrics -->
+          <div class="cvrp-stats-row">
+            <div class="cvrp-stat-box">
+              <div class="cvrp-stat-val">1000–1500 kg</div>
+              <div class="cvrp-stat-lbl">Kapasitas Truk CVRP</div>
+            </div>
+            <div class="cvrp-stat-box">
+              <div class="cvrp-stat-val">0% Backtrack</div>
+              <div class="cvrp-stat-lbl">Efisiensi Arah Lintasan</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. 4-Tier Ecosystem Pipeline -->
+    <section>
+      <div class="section-head">
+        <h2 class="section-title">
+          <span class="section-num">4</span>
+          Arsitektur Ekosistem Digital Telemetri (4-Tier Layer)
+        </h2>
+        <span class="section-meta">Asynchronous Bun Engine & PostGIS Spatial Extension</span>
+      </div>
+
+      <div class="pipeline-grid">
+        <div class="pipe-step">
+          <span class="pipe-badge">TIER 1 · PERCEPTION</span>
+          <div class="pipe-title">Node IoT Fisik TPS</div>
+          <p class="pipe-desc">ESP32 DevKit V1 mengakuisisi data ultrasonik ToF JSN-SR04T, gas MQ-135/MQ-4, mikroklimat DHT22, dengan proteksi cuaca IP67 & solar harvesting CN3065.</p>
+        </div>
+
+        <div class="pipe-step">
+          <span class="pipe-badge">TIER 2 · TRANSPORT</span>
+          <div class="pipe-title">Dual Pipeline Data</div>
+          <p class="pipe-desc">Transmisi nirkabel via HTTP POST <code>/api/telemetry</code> (X-Node-Token) untuk lapangan, serta Web Serial API 115200 Baud untuk pengujian prototipe laboratorium.</p>
+        </div>
+
+        <div class="pipe-step">
+          <span class="pipe-badge">TIER 3 · INGESTION</span>
+          <div class="pipe-title">BE-SUGENG & PostGIS</div>
+          <p class="pipe-desc">Runtime engine Elysia.js + Bun berkecepatan tinggi, validasi TypeBox, sanitasi sensor lock (-1), dan persistensi tabel spasial Supabase PostgreSQL (EPSG:4326).</p>
+        </div>
+
+        <div class="pipe-step">
+          <span class="pipe-badge">TIER 4 · COCKPIT</span>
+          <div class="pipe-title">Dashboard Web SIG</div>
+          <p class="pipe-desc">Cockpit pemantauan berbasis Astro + React + Leaflet.js dengan indikator wadah SVG dinamis, visualisasi rute CVRP, dan push notifikasi WebSocket real-time.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Key Impact Metrics -->
+    <section>
+      <div class="impact-banner">
+        <div class="impact-item">
+          <div class="impact-num">97%</div>
+          <div class="impact-label">Akurasi Pembacaan Sensor Jarak Ultrasonik Kedap Air</div>
+        </div>
+        <div class="impact-item">
+          <div class="impact-num">35%</div>
+          <div class="impact-label">Estimasi Penghematan Biaya Bahan Bakar (BBM) Armada</div>
+        </div>
+        <div class="impact-item">
+          <div class="impact-num">9 Titik</div>
+          <div class="impact-label">Cakupan TPS Strategis Terpantau 24/7 di Seluruh Kota</div>
+        </div>
+        <div class="impact-item">
+          <div class="impact-num">Zero</div>
+          <div class="impact-label">Target Eliminasi Luapan Sampah & Mitigasi Polusi Bau Busuk</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Footer & Institutional Credits -->
+    <footer class="poster-footer">
+      <div class="academic-info">
+        <strong>UNIVERSITAS TIDAR · FAKULTAS TEKNIK · TEKNOLOGI INFORMASI</strong>
+        <span>Proyek Akhir Mata Kuliah Internet of Things (IoT) Tahun Akademik 2026/2027</span>
+        <span>Bekerja sama dengan Dinas Lingkungan Hidup (DLH) Kota Magelang</span>
+      </div>
+      <div class="team-info">
+        <div class="team-col">
+          <span class="role">Ketua Tim Pengusul</span>
+          <span class="name">Farrel Apriandry Ciu</span>
+          <span class="npm">NPM: 2430506056</span>
+        </div>
+        <div class="team-col">
+          <span class="role">Anggota Tim</span>
+          <span class="name">Nabila Syafiqah Z. F.</span>
+          <span class="npm">NPM: 2430506058</span>
+        </div>
+        <div class="team-col">
+          <span class="role">Dosen Pengampu</span>
+          <span class="name">M. Maksum Hidayat, M.Kom</span>
+          <span class="npm">NIP: 199506302025061003</span>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    let isZoomed = false;
+    function toggleZoom() {
+      const poster = document.getElementById('poster-root');
+      const btnText = document.getElementById('zoom-btn-text');
+      isZoomed = !isZoomed;
+      if (isZoomed) {
+        poster.style.transform = 'scale(1.15)';
+        poster.style.transformOrigin = 'top center';
+        poster.style.marginBottom = '240px';
+        btnText.textContent = 'Ukuran Standar';
+      } else {
+        poster.style.transform = 'none';
+        poster.style.marginBottom = '0';
+        btnText.textContent = 'Perbesar Poster';
+      }
+    }
+
+    let fitSinglePage = false;
+    function toggleFitSinglePage() {
+      const body = document.body;
+      const btnText = document.getElementById('fit-page-btn-text');
+      fitSinglePage = !fitSinglePage;
+      if (fitSinglePage) {
+        body.classList.add('print-fit-single');
+        btnText.textContent = 'Cetak: 1 Halaman Fit (Aktif)';
+      } else {
+        body.classList.remove('print-fit-single');
+        btnText.textContent = 'Cetak: Standar (2 Halaman)';
+      }
+    }
+  </script>
+</body>
+</html>
