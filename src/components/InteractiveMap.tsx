@@ -10,6 +10,14 @@ interface Props {
   fitTrigger: number;
 }
 
+// API key CARTO Basemaps via env untuk menghilangkan watermark "API key required"
+const CARTO_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.PUBLIC_CARTO_KEY as string | undefined) || '';
+
+function getTileUrl(style: 'voyager' | 'dark_all' = 'voyager'): string {
+  const base = `https://{s}.basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}{r}.png`;
+  return CARTO_API_KEY ? `${base}?key=${CARTO_API_KEY}` : base;
+}
+
 export const InteractiveMap: React.FC<Props> = ({
   nodes,
   selectedId,
@@ -43,8 +51,8 @@ export const InteractiveMap: React.FC<Props> = ({
 
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      // Basemap Voyager CARTO
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      // Basemap Voyager CARTO (dengan API Key untuk menghilangkan watermark)
+      L.tileLayer(getTileUrl('voyager'), {
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 19,
