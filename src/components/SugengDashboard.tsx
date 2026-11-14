@@ -625,17 +625,22 @@ export const SugengDashboard: React.FC = () => {
           <section className="workspace" aria-label="Ruang kerja pusat operasi">
             {/* Panel Kiri: Manifest TPS */}
             <aside className="panel manifest-panel" aria-label="Daftar manifest TPS">
-              <div className="manifest-head">
-                <div className="manifest-title-row">
-                  <h2>Manifest TPS</h2>
-                  <span className="manifest-badge">
-                    {filteredNodes.length} dari {nodes.length}
-                  </span>
+              <div className="panel-head">
+                <div>
+                  <div className="panel-kicker">Pemantauan lokasi</div>
+                  <div className="panel-title">Manifest TPS</div>
+                  <div className="panel-subtitle">Pilih lokasi untuk melihat detail</div>
                 </div>
-                <div className="search-box">
+                <div className="count-label">
+                  {String(filteredNodes.length).padStart(2, '0')} / {String(nodes.length).padStart(2, '0')} TITIK
+                </div>
+              </div>
+
+              <div className="manifest-tools">
+                <label className="searchbox">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
-                    <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" strokeWidth="1.7" />
+                    <path d="m16 16 5 5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
                   </svg>
                   <input
                     type="search"
@@ -644,33 +649,38 @@ export const SugengDashboard: React.FC = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                </div>
-                <div className="filter-chips" role="tablist" aria-label="Filter status TPS">
+                </label>
+                <div className="filter-row" role="group" aria-label="Filter status TPS">
                   <button
                     className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
                     onClick={() => setActiveFilter('all')}
                   >
-                    Semua
+                    Semua <span>{totalCount}</span>
                   </button>
                   <button
                     className={`filter-btn ${activeFilter === 'critical' ? 'active' : ''}`}
                     onClick={() => setActiveFilter('critical')}
                   >
-                    Prioritas ({criticalCount})
+                    Prioritas <span>{criticalCount}</span>
                   </button>
                   <button
                     className={`filter-btn ${activeFilter === 'sanitation' ? 'active' : ''}`}
                     onClick={() => setActiveFilter('sanitation')}
                   >
-                    Sanitasi ({sanitationCount})
+                    Sanitasi <span>{sanitationCount}</span>
                   </button>
                   <button
                     className={`filter-btn ${activeFilter === 'delayed' ? 'active' : ''}`}
                     onClick={() => setActiveFilter('delayed')}
                   >
-                    Tertunda
+                    Tertunda <span>{nodes.filter((n) => freshness(n.age) !== 'live').length}</span>
                   </button>
                 </div>
+              </div>
+
+              <div className="manifest-summary">
+                <span>LOKASI TPS</span>
+                <span>FILL HEIGHT</span>
               </div>
 
               <div className="manifest-list" role="list">
@@ -680,58 +690,46 @@ export const SugengDashboard: React.FC = () => {
                   filteredNodes.map((n) => {
                     const isSel = n.id === selectedId;
                     return (
-                      <div
+                      <button
                         key={n.id}
-                        role="button"
-                        tabIndex={0}
+                        type="button"
                         className={`tps-row ${isSel ? 'selected' : ''}`}
                         onClick={() => setSelectedId(n.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setSelectedId(n.id);
-                          }
-                        }}
+                        aria-pressed={isSel}
                       >
-                        <div className="tps-row-top">
-                          <div>
-                            <div className="tps-name">{n.name}</div>
-                            <div className="tps-sub">
-                              {n.area} · {n.id}
-                            </div>
-                          </div>
-                          <span className={`status-pill ${n.operational}`}>
-                            <span>●</span>
-                            {statusLabel(n.operational).toUpperCase()}
+                        <span className={`status-rail ${n.operational}`}></span>
+                        <span className="tps-main">
+                          <span className="tps-code">{n.id}</span>
+                          <span className="tps-name" title={n.name}>{n.name}</span>
+                          <span className="tps-meta">
+                            <span>{n.area}</span>
+                            <span className="mini-dot"></span>
+                            <span>
+                              {freshness(n.age) === 'live' ? 'Live' : freshness(n.age) === 'delayed' ? 'Tertunda' : 'Stale'} · {n.age} m
+                            </span>
+                            {n.sanitation && (
+                              <>
+                                <span className="mini-dot" style={{ background: '#c18a3c' }}></span>
+                                <span style={{ color: '#c18a3c', fontWeight: 600 }}>Sanitasi</span>
+                              </>
+                            )}
                           </span>
-                        </div>
-                        <div className="progress-track" aria-hidden="true">
-                          <div
-                            className="progress-fill"
-                            style={{
-                              width: `${Math.min(n.fill, 100)}%`,
-                              background:
-                                n.operational === 'critical'
-                                  ? 'var(--red)'
-                                  : n.operational === 'warning'
-                                  ? 'var(--amber)'
-                                  : 'var(--green)',
-                            }}
-                          ></div>
-                        </div>
-                        <div className="tps-metrics">
-                          <span className="tps-percent">
-                            {fmt(n.fill)}% ({fmt(n.liters)} L)
+                        </span>
+                        <span className="tps-value">
+                          <span className="tps-percent">{fmt(n.fill)}%</span>
+                          <span className={`tps-status ${n.operational}`}>
+                            {statusLabel(n.operational)}
                           </span>
-                          <div className="tps-tags">
-                            {n.sanitation && <span className="mini-tag sanitation">Sanitasi</span>}
-                            <span className="mini-tag age">{freshness(n.age).toUpperCase()}</span>
-                          </div>
-                        </div>
-                      </div>
+                        </span>
+                      </button>
                     );
                   })
                 )}
+              </div>
+
+              <div className="manifest-foot">
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c18a3c', display: 'inline-block' }}></span>
+                Umur data mengikuti interval telemetri sensor 2 menit.
               </div>
             </aside>
 
