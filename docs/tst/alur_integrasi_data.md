@@ -9,104 +9,85 @@ Dokumentasi arsitektur integrasi data end-to-end dari perangkat edge sensor IoT 
 ```mermaid
 flowchart TD
     %% ==========================================================================
-    %% SUGENG DATA INTEGRATION PIPELINE (5-TIER ARCHITECTURE)
+    %% SUGENG DATA INTEGRATION PIPELINE (VERTICAL HIGH-CLARITY ARCHITECTURE)
     %% ==========================================================================
 
     subgraph PerceptionTier["1. PERCEPTION & SENSING TIER (EDGE IoT NODE)"]
         direction TB
-        subgraph HardwareSensors["Transduser Sensorik (TPS HDPE 120L)"]
-            S_US["Sensor JSN-SR04T<br/><i>Ultrasonic Waterproof IP67</i><br/>• Trig GPIO 12, Echo GPIO 13<br/>• Ukur Jarak Permukaan Sampah<br/>• Rentang Efektif: 20 - 95 cm"]
-            S_MQ135["Sensor MQ-135<br/><i>Gas Pembusukan Organik</i><br/>• Analog Out GPIO 34 ADC1<br/>• Indikasi Amonia NH₃, Sulfida"]
-            S_MQ4["Sensor MQ-4<br/><i>Gas Metana CH₄</i><br/>• Analog Out GPIO 35 ADC1<br/>• Deteksi Gas Mudah Terbakar"]
-            S_DHT["Sensor DHT22<br/><i>Micro-climate Sensor</i><br/>• One-Wire Data GPIO 14<br/>• Suhu °C & Kelembapan % RH"]
+        subgraph Sensors["Transduser Sensorik (Wadah TPS HDPE 120L)"]
+            direction LR
+            S_US["Sensor JSN-SR04T<br/><b>Ultrasonic Waterproof IP67</b><br/>• Trig: GPIO 12 | Echo: GPIO 13<br/>• Ukur Jarak Permukaan Sampah (20 - 95 cm)"]
+            S_GAS["Sensor Gas MQ-135 & MQ-4<br/><b>Deteksi Pembusukan & Metana</b><br/>• MQ-135 (NH₃ / Bau): GPIO 34 ADC1<br/>• MQ-4 (CH₄ / Metana): GPIO 35 ADC1"]
+            S_ENV["Sensor DHT22 & Suplai Daya<br/><b>Mikroklimat & Baterai Mandiri</b><br/>• Data: GPIO 14 (Suhu & RH)<br/>• Solar 6V 1W + CN3065 + Li-Ion 18650"]
         end
 
-        subgraph PowerSystem["Manajemen Daya Mandiri"]
-            SOLAR["Solar Panel 6V 1W<br/>Modul Charger CN3065"]
-            BATT["Baterai Li-Ion 18650<br/>1S2P 3000 - 5000 mAh"]
-            STEPUP["MT3608 Step-Up<br/>Output Boost 5V Stabil"]
-            MOSFET["MOSFET FR120N Switch<br/>Pulsed Heating Gas Sensor"]
-        end
+        MCU["Mikrokontroler ESP32 DevKit V1 (Tensilica 32-bit Dual-Core)<br/>• Akuisisi ADC 12-bit & Digital Median Filtering<br/>• Formula Volume: V% = (H_total - Jarak) / (H_total - Blind) x 100%<br/>• Manajemen Deep Sleep Berkala & Pulsed Heating MOSFET FR120N"]
 
-        MCU["Mikrokontroler ESP32 DevKit V1<br/>• Akuisisi ADC 12-bit & Digital Filtering<br/>• Kalkulasi Volume: V% = (H_total - Jarak)/(H_total - Blind) x 100%<br/>• Serial Payload Formatter: JSON 115200 Baud<br/>• Siklus Deep Sleep & Duty-Cycle Management"]
-
-        S_US -->|Time of Flight| MCU
-        S_MQ135 -->|Analog Voltage| MCU
-        S_MQ4 -->|Analog Voltage| MCU
-        S_DHT -->|Digital Signal| MCU
-        SOLAR --> BATT --> STEPUP --> MCU
-        MCU -->|Kontrol Gate GPIO 4| MOSFET
-        MOSFET -->|Daya Pemanas Terjadwal| S_MQ135
-        MOSFET -->|Daya Pemanas Terjadwal| S_MQ4
+        Sensors -->|Sinyal ADC, One-Wire & Time of Flight| MCU
     end
 
-    subgraph IngestionTier["2. INGESTION & GATEWAY TIER (BE-SUGENG)"]
-        direction TB
-        GATEWAY["API Ingestion Gateway<br/><i>Elysia.js + Bun Runtime Engine</i><br/>• High Throughput Asynchronous I/O<br/>• Dokumentasi OpenAPI / Swagger"]
-        AUTH["Filter Keamanan & Autentikasi<br/>• Header: X-Node-Token<br/>• Rate Limiting & Origin Validation"]
-        VALIDATOR["Skema Validasi & Sanitasi Data<br/>• Strict Schema Validation TypeBox<br/>• Sensor Out-of-Range Fallback Lock -1<br/>• Kalibrasi Rasio Rs/Ro Kurva Gas"]
-        EVALUATOR["Evaluasi Ambang Batas Logika Bisnis<br/>• Status Keterisian: SAFE &lt;50%, WARNING 50-74%, CRITICAL ≥75%<br/>• Gas Alert: NH₃ ≥ 60 ppm atau CH₄ ≥ 250 ppm<br/>• Penandaan Kebutuhan Sanitasi Khusus"]
-
-        GATEWAY --> AUTH --> VALIDATOR --> EVALUATOR
-    end
-
-    subgraph DualTransport["Pipeline Transmisi Data"]
+    subgraph TransportTier["2. DUAL TRANSMISSION PIPELINE (PROTOKOL TRANSPORT)"]
         direction LR
-        NET_HTTP["Transmisi Jaringan IoT<br/>WiFi / Cellular HTTP POST<br/>Endpoint: /api/telemetry"]
-        NET_DIRECT["Transmisi Uji Fisik Direct<br/>USB CDC Serial 115200<br/>Local Bridge ws://localhost:8765"]
+        NET_HTTP["Jalur Utama: Nirkabel IoT Lapangan<br/><b>HTTP POST (JSON Telemetri)</b><br/>Header: X-Node-Token | Endpoint: /api/telemetry"]
+        NET_DIRECT["Jalur Uji: Direct Hardware Lab<br/><b>USB CDC Serial (115200 Baud)</b><br/>Web Serial API Browser / Local WebSocket Bridge"]
     end
 
-    MCU -->|Koneksi Internet Lapangan| NET_HTTP --> GATEWAY
-    MCU -.->|Kabel USB / Lab Sandbox| NET_DIRECT
+    MCU -->|Koneksi Internet WiFi / GSM| NET_HTTP
+    MCU -.->|Kabel USB / Sandbox Testing| NET_DIRECT
 
-    subgraph PersistenceTier["3. PERSISTENCE & REALTIME TIER (SUPABASE CLOUD)"]
+    subgraph IngestionTier["3. INGESTION GATEWAY & MIDDLEWARE TIER (BE-SUGENG)"]
         direction TB
-        subgraph PostgresEngine["PostgreSQL 15+ Core Database"]
-            TBL_NODES[("Tabel: public.tps_nodes<br/>• ID Node NODE-MGL-01 s/d 09<br/>• Nama TPS & Alamat Administratif<br/>• Volume Terakhir % & Kapasitas L<br/>• Status Operasional & Flag Gas Alert<br/>• Koordinat: geometry Point 4326")]
-            TBL_LOGS[("Tabel: public.telemetry_logs<br/>• Data Time-Series Berkala Historis<br/>• Timestamp, Sensor Readings, ADC Log<br/>• Audit Trail untuk Analisis Tren")]
+        GATEWAY["API Ingestion Gateway (Elysia.js + Bun Runtime Engine)<br/>• Asynchronous High Throughput I/O & OpenAPI Swagger Docs"]
+        
+        subgraph Processing["Pipeline Pemrosesan Data"]
+            direction LR
+            SEC["1. Autentikasi<br/>X-Node-Token Validation"]
+            VAL["2. Sanitasi & Fallback<br/>TypeBox Strict Schema<br/>Sensor Lock (-1 Fallback)"]
+            EVAL["3. Evaluasi Logika Bisnis<br/>Klasifikasi SAFE / WARNING / CRITICAL<br/>Ambang Gas Alert (NH₃ ≥ 60 / CH₄ ≥ 250)"]
         end
 
-        POSTGIS["Ekstensi Spasial PostGIS<br/>• Index Spasial GiST pada Kolom Location<br/>• Fungsi Trigger Spasial EPSG:4326<br/>• Export Format GeoJSON ST_AsGeoJSON"]
-        REALTIME_SRV["Supabase Realtime Service<br/><i>Engine WebSocket Elixir/Phoenix</i><br/>• CDC Change Data Capture via PostgreSQL WAL<br/>• Broadcast: postgres_changes on tps_nodes"]
-
-        TBL_NODES --- POSTGIS
-        TBL_NODES --> REALTIME_SRV
+        GATEWAY --> SEC --> VAL --> EVAL
     end
 
-    EVALUATOR -->|Upsert Data Status Terkini| TBL_NODES
-    EVALUATOR -->|Append Riwayat Time-Series| TBL_LOGS
+    NET_HTTP --> GATEWAY
 
-    subgraph AnalyticsTier["4. ANALYTICS & ROUTING OPTIMIZATION TIER"]
+    subgraph PersistenceTier["4. PERSISTENCE & REALTIME TIER (SUPABASE CLOUD)"]
         direction TB
-        ROUTER_ENGINE["Vehicle Routing Solver Google OR-Tools<br/><i>Capacitated Vehicle Routing Problem CVRP</i><br/>• Matrix Jarak & Waktu Tempuh Spasial Kota Magelang<br/>• Filter Lokasi: TPS Prioritas ≥75% & Siaga ≥50%<br/>• Kendala: Kapasitas Muatan Truk Armada Maks 1000 - 1500 kg"]
-
-        OPTIMAL_ROUTE["Rute Tertutup Pengangkutan Optimal Closed-Loop<br/>1. Titik Awal: Pool DLH Kota Magelang -7.444152, 110.230185<br/>2. Melayani TPS Kritis & Siaga Sepanjang Koridor Kota<br/>3. Titik Singgah Riset: TPS Kampus Tuguran UNTIDAR -7.459694, 110.216861<br/>4. Titik Pembuangan: TPSA Banyuurip -7.4988, 110.2312<br/>5. Titik Akhir: Kembali ke Pool DLH Kota Magelang"]
-
-        ROUTER_ENGINE --> OPTIMAL_ROUTE
-    end
-
-    POSTGIS -->|Query Koordinat & Bobot Volume| ROUTER_ENGINE
-
-    subgraph PresentationTier["5. PRESENTATION & COMMAND CENTER TIER (SUGENG DASHBOARD)"]
-        direction TB
-        UI_CORE["Astro + React Dashboard Application<br/><i>Design Token: Institutional Neutral / Institutional Green</i>"]
-
-        subgraph DashboardComponents["Komponen Cockpit Pusat Operasi"]
-            COMP_MAP["Peta Interaktif SIG Leaflet.js + CARTO Voyager<br/>• Marker Kustom Kampus Tuguran UNTIDAR<br/>• Marker Depot Pool DLH & Destinasi TPSA Banyuurip<br/>• Layer Visualisasi Polyline CVRP Terpadu"]
-            COMP_MANIFEST["Panel Manifest TPS Responsif<br/>• Indikator SVG Wadah Dinamis Fill Height & ClipPath<br/>• Monitoring Status Operasional 9 Titik TPS"]
-            COMP_INSPECTOR["Inspector Node Terpilih<br/>• Detail Telemetri Sensor Mikro Ultrasonik & Gas<br/>• Koordinat Presisi DD Decimal Degrees 6 Digit"]
-            COMP_MODULES["Modul Pendukung Operasional<br/>• Logistik Armada & Monitoring Muatan Truk<br/>• Diagnostik Sensor & Konsol Aliran Paket Data<br/>• Master Inventaris Tempat Penampungan Sementara"]
+        subgraph Postgres["Basis Data PostgreSQL 15+ & PostGIS Extension"]
+            direction LR
+            TBL_NODES[("tps_nodes Table<br/>• Metadata Titik (ID, Nama, Alamat)<br/>• Status Keterisian Terkini (% & Liter)<br/>• Flag Sanitasi & geometry(Point, 4326)")]
+            TBL_LOGS[("telemetry_logs Table<br/>• Log Time-Series Historis Lengkap<br/>• Audit Trail untuk Analisis Tren")]
+            POSTGIS["PostGIS Spatial Engine<br/>• Spatial Indexing GiST<br/>• Query Geometri EPSG:4326"]
         end
 
-        UI_CORE --> COMP_MAP
-        UI_CORE --> COMP_MANIFEST
-        UI_CORE --> COMP_INSPECTOR
-        UI_CORE --> COMP_MODULES
+        REALTIME_SRV["Supabase Realtime Service (Elixir/Phoenix WebSocket)<br/>• CDC Change Data Capture via PostgreSQL WAL<br/>• Broadcast: postgres_changes on tps_nodes"]
+
+        TBL_NODES -->|WAL Replication Stream| REALTIME_SRV
     end
 
-    REALTIME_SRV -->|WSS Event Broadcast| UI_CORE
-    NET_DIRECT -.->|Web Serial API / WSS Local Stream| UI_CORE
-    OPTIMAL_ROUTE -->|GeoJSON Path Coordinates| COMP_MAP
+    EVAL -->|Upsert Data Keterisian Terkini| TBL_NODES
+    EVAL -->|Append Riwayat Log Sensor| TBL_LOGS
+
+    subgraph AnalyticsPresentationTier["5. ANALYTICS & PRESENTATION TIER (COMMAND CENTER COCKPIT)"]
+        direction TB
+        subgraph EngineCVRP["Optimasi Rute Armada (Google OR-Tools)"]
+            ROUTER_ENGINE["CVRP Vehicle Routing Solver<br/>• Input: Matriks Jarak Jalan Magelang + TPS Siaga & Prioritas (≥50%)<br/>• Output: Rute Closed-Loop Pool DLH (-7.444152, 110.230185)<br/>&nbsp;&nbsp;→ TPS Siaga/Prioritas → TPSA Banyuurip → Pool DLH"]
+        end
+
+        subgraph DashboardUI["Sugeng Dashboard (Astro + React + TypeScript + Leaflet.js)"]
+            direction LR
+            COMP_MAP["Peta Interaktif GIS<br/>• Marker Kustom Kampus Tuguran (-7.459694, 110.216861)<br/>• Marker Pool DLH (-7.444152, 110.230185) & TPSA Banyuurip<br/>• Overlay Polyline Rute Armada CVRP"]
+            COMP_MANIFEST["Manifest TPS & Wadah SVG<br/>• Indikator SVG Dinamis Realtime<br/>• Monitoring 9 Titik TPS Kota"]
+            COMP_INSPECTOR["Inspector Node & Telemetri<br/>• Detail Sensor Ultrasonik & Gas<br/>• Validasi Koordinat Presisi DD"]
+        end
+
+        EngineCVRP -->|GeoJSON Path Koordinat Rute| COMP_MAP
+    end
+
+    REALTIME_SRV -->|Trigger Optimasi Armada (Keterisian ≥50%)| ROUTER_ENGINE
+    REALTIME_SRV -->|WSS Realtime Push Event| COMP_MAP
+    REALTIME_SRV -->|Broadcast Status Keterisian| COMP_MANIFEST
+    NET_DIRECT -.->|Direct Hardware Stream| COMP_INSPECTOR
 
     %% ==========================================================================
     %% COLOR SCHEME & STYLING
@@ -118,11 +99,11 @@ flowchart TD
     classDef uiStyle fill:#f4faf6,stroke:#176b49,stroke-width:2px,color:#114832;
     classDef transportStyle fill:#fbfcfb,stroke:#708276,stroke-width:1.5px,stroke-dasharray: 4 2,color:#2c3a30;
 
-    class S_US,S_MQ135,S_MQ4,S_DHT,SOLAR,BATT,STEPUP,MOSFET,MCU edgeStyle;
-    class GATEWAY,AUTH,VALIDATOR,EVALUATOR gatewayStyle;
+    class S_US,S_GAS,S_ENV,MCU edgeStyle;
+    class GATEWAY,SEC,VAL,EVAL gatewayStyle;
     class TBL_NODES,TBL_LOGS,POSTGIS,REALTIME_SRV dbStyle;
-    class ROUTER_ENGINE,OPTIMAL_ROUTE aiStyle;
-    class UI_CORE,COMP_MAP,COMP_MANIFEST,COMP_INSPECTOR,COMP_MODULES uiStyle;
+    class ROUTER_ENGINE aiStyle;
+    class COMP_MAP,COMP_MANIFEST,COMP_INSPECTOR uiStyle;
     class NET_HTTP,NET_DIRECT transportStyle;
 ```
 
@@ -133,45 +114,50 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     autonumber
-    actor SensorNode as Node IoT (ESP32)
-    participant DirectTransport as Direct USB / Local Bridge
-    participant Middleware as BE-SUGENG (Elysia.js)
-    participant Database as Supabase DB (PostgreSQL + PostGIS)
-    participant RealtimeSrv as Supabase Realtime (WebSocket)
-    participant RoutingSolver as Google OR-Tools (CVRP Solver)
-    participant DashboardWeb as Sugeng Dashboard (Web GIS)
+    actor Node as ESP32 (IoT Node)
+    participant Bridge as USB Serial / WS
+    participant Backend as BE-SUGENG (Elysia)
+    participant DB as Supabase (PostGIS)
+    participant Realtime as Supabase (WSS)
+    participant Solver as OR-Tools (CVRP)
+    participant Dashboard as Dashboard (GIS)
 
-    %% Mode A: Wireless Telemetry Ingestion
+    %% --------------------------------------------------------------------------
+    %% FASE 1: INGESTI WIRELESS PERIODIK
+    %% --------------------------------------------------------------------------
     rect rgb(242, 247, 244)
-    Note over SensorNode,Database: 1. Transmisi Data Berkala (Wireless Remote Operation)
-    SensorNode->>SensorNode: Bangun dari Deep Sleep & Aktifkan MOSFET FR120N
-    SensorNode->>SensorNode: Sampling JSN-SR04T, MQ-135, MQ-4, DHT22
-    SensorNode->>Middleware: HTTP POST /api/telemetry (Payload + X-Node-Token)
-    Middleware->>Middleware: Validasi Schema TypeBox & Sanitasi Data
-    Middleware->>Middleware: Klasifikasi Status (Aman, Siaga, Prioritas, Gas Alert)
-    Middleware->>Database: UPDATE public.tps_nodes & INSERT public.telemetry_logs
-    Database->>RealtimeSrv: Trigger WAL Event (postgres_changes on tps_nodes)
-    RealtimeSrv-->>DashboardWeb: WSS Push Broadcast Update Telemetri
-    DashboardWeb->>DashboardWeb: Re-render Manifest, SVG Bin Gauge & Marker GIS
-    SensorNode->>SensorNode: Masuk Siklus Deep Sleep untuk Efisiensi Daya
+    Note over Node,DB: 1. Transmisi Telemetri Berkala (Wireless IoT)
+    Node->>Node: Bangun Deep Sleep & Aktifkan MOSFET FR120N
+    Node->>Node: Sampling Sensor (JSN-SR04T, Gas MQ, DHT22)
+    Node->>Backend: HTTP POST /api/telemetry (Payload + Token)
+    Backend->>Backend: Validasi TypeBox Schema & Klasifikasi Status
+    Backend->>DB: UPDATE public.tps_nodes & INSERT telemetry_logs
+    DB->>Realtime: Trigger WAL Event (postgres_changes on tps_nodes)
+    Realtime-->>Dashboard: WSS Push Broadcast Update Telemetri
+    Dashboard->>Dashboard: Re-render Manifest, SVG Gauge & Marker GIS
+    Node->>Node: Siklus Deep Sleep untuk Efisiensi Daya
     end
 
-    %% Mode B: Direct Hardware / Lab Testing
+    %% --------------------------------------------------------------------------
+    %% FASE 2: TESTING HARDWARE LANGSUNG (USB SERIAL / BRIDGE)
+    %% --------------------------------------------------------------------------
     rect rgb(240, 245, 250)
-    Note over SensorNode,DashboardWeb: 2. Transmisi Direct Hardware (Lab Prototype Testing)
-    SensorNode-->>DirectTransport: USB Serial Output (JSON String tiap 2 detik, 115200 Baud)
-    DirectTransport-->>DashboardWeb: Web Serial API Browser / Local WebSocket Bridge
-    DashboardWeb->>DashboardWeb: Live Pipeline -> Update Node NODE-05 (Kampus Tuguran)
-    DashboardWeb->>DashboardWeb: Update Terminal Log Console & Indikator Sensor Real-Time
+    Note over Node,Dashboard: 2. Transmisi Uji Fisik (Direct Hardware Lab Testing)
+    Node-->>Bridge: USB Serial Output (JSON 115200 Baud)
+    Bridge-->>Dashboard: Web Serial API Browser / Local WebSocket Bridge
+    Dashboard->>Dashboard: Live Pipeline -> Update Node NODE-05 (Kampus)
+    Dashboard->>Dashboard: Update Terminal Console & Indikator Sensor Real-Time
     end
 
-    %% Mode C: Fleet Routing Optimization
+    %% --------------------------------------------------------------------------
+    %% FASE 3: OPTIMASI RUTE PENGANGKUTAN ARMADA
+    %% --------------------------------------------------------------------------
     rect rgb(250, 246, 238)
-    Note over Database,DashboardWeb: 3. Optimasi Rute Pengangkutan Sampah (CVRP Execution)
-    DashboardWeb->>Database: Query Titik TPS Berstatus Siaga (≥50%) & Prioritas (≥75%)
-    Database-->>RoutingSolver: Data Spasial Titik, Geometri PostGIS, & Estimasi Keterisian
-    RoutingSolver->>RoutingSolver: Eksekusi CVRP Berbasis Matriks Jarak Jaringan Jalan
-    RoutingSolver-->>DashboardWeb: Return Urutan Rute Optimal (Pool DLH -> TPS -> TPSA -> Pool DLH)
-    DashboardWeb->>DashboardWeb: Render Polyline Rute Armada di Peta Leaflet & Timeline Logistik
+    Note over DB,Dashboard: 3. Optimasi Rute Pengangkutan Armada (CVRP Execution)
+    Dashboard->>DB: Query Titik TPS Siaga (≥50%) & Prioritas (≥75%)
+    DB-->>Solver: Data Spasial Titik, Geometri PostGIS, & Estimasi Volume
+    Solver->>Solver: Eksekusi CVRP Matriks Jaringan Jalan Magelang
+    Solver-->>Dashboard: Return Rute Optimal (Pool DLH → TPS → TPSA → Pool DLH)
+    Dashboard->>Dashboard: Render Polyline Rute Armada di Peta Leaflet & Timeline Logistik
     end
 ```
