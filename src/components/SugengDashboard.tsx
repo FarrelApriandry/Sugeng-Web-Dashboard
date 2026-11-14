@@ -133,7 +133,13 @@ const TrashBinSvg: React.FC<BinProps> = ({
   );
 };
 
-export const SugengDashboard: React.FC = () => {
+export type NavSection = 'Pusat Operasi' | 'Logistik Armada' | 'Diagnostik IoT' | 'Inventaris';
+
+export interface SugengDashboardProps {
+  initialNav?: NavSection;
+}
+
+export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = 'Pusat Operasi' }) => {
   // 1. Data Node TPS Utama
   const [nodes, setNodes] = useState<ScenarioNode[]>(CANONICAL_SCENARIO);
   const [selectedId, setSelectedId] = useState<string>('NODE-05');
@@ -141,7 +147,7 @@ export const SugengDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showSpecial, setShowSpecial] = useState<boolean>(true);
   const [fitTrigger, setFitTrigger] = useState<number>(0);
-  const [activeNav, setActiveNav] = useState<'Pusat Operasi' | 'Logistik Armada' | 'Diagnostik IoT' | 'Inventaris'>('Pusat Operasi');
+  const [activeNav, setActiveNav] = useState<NavSection>(initialNav);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -177,6 +183,67 @@ export const SugengDashboard: React.FC = () => {
       setToastMessage(null);
     }, 3200);
   };
+
+  // Helper navigasi multi-halaman
+  const navigateTo = (nav: NavSection) => {
+    setActiveNav(nav);
+    if (typeof window !== 'undefined') {
+      const navUrls: Record<NavSection, string> = {
+        'Pusat Operasi': '/',
+        'Logistik Armada': '/logistik-armada',
+        'Diagnostik IoT': '/diagnostik-iot',
+        'Inventaris': '/inventaris',
+      };
+      const targetUrl = navUrls[nav];
+      if (window.location.pathname !== targetUrl && window.location.pathname !== targetUrl + '/') {
+        window.history.pushState({}, '', targetUrl);
+      }
+    }
+  };
+
+  // Sinkronisasi navigasi dari URL path browser & tombol Back/Forward
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const getNavFromPath = (pathname: string): NavSection | null => {
+        const clean = pathname.replace(/\/$/, '') || '/';
+        if (clean === '/logistik-armada' || clean === '/logistik') return 'Logistik Armada';
+        if (clean === '/diagnostik-iot' || clean === '/diagnostik') return 'Diagnostik IoT';
+        if (clean === '/inventaris') return 'Inventaris';
+        if (clean === '' || clean === '/' || clean === '/index.html') return 'Pusat Operasi';
+        return null;
+      };
+
+      const pathNav = getNavFromPath(window.location.pathname);
+      if (pathNav && pathNav !== activeNav) {
+        setActiveNav(pathNav);
+      }
+
+      const handlePopState = () => {
+        const pNav = getNavFromPath(window.location.pathname);
+        if (pNav) {
+          setActiveNav(pNav);
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, []);
+
+  // Update document title saat tab berubah
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const titles: Record<NavSection, string> = {
+        'Pusat Operasi': 'SUGENG: Pusat Operasi & Pemantauan TPS Kota Magelang',
+        'Logistik Armada': 'SUGENG: Logistik Armada & Optimasi Rute CVRP',
+        'Diagnostik IoT': 'SUGENG: Diagnostik Telemetri Sensor IoT',
+        'Inventaris': 'SUGENG: Inventaris Master TPS Kota Magelang',
+      };
+      if (titles[activeNav]) {
+        document.title = titles[activeNav];
+      }
+    }
+  }, [activeNav]);
 
   const addTelemetryLog = (source: TelemetryLogEntry['source'], nodeId: string, detail: string) => {
     const newEntry: TelemetryLogEntry = {
@@ -484,15 +551,32 @@ export const SugengDashboard: React.FC = () => {
             </svg>
           </div>
           <div>
-            <div className="brand-name">SUGENG</div>
-            <div className="brand-caption">WASTE OPERATIONS SYSTEM</div>
+            <a
+              href="/"
+              onClick={(e) => {
+                if (!e.metaKey && !e.ctrlKey) {
+                  e.preventDefault();
+                  navigateTo('Pusat Operasi');
+                }
+              }}
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <div className="brand-name">SUGENG</div>
+              <div className="brand-caption">WASTE OPERATIONS SYSTEM</div>
+            </a>
           </div>
         </div>
 
         <nav className="main-nav" aria-label="Navigasi modul">
-          <button
+          <a
+            href="/"
             className={`nav-item ${activeNav === 'Pusat Operasi' ? 'active' : ''}`}
-            onClick={() => setActiveNav('Pusat Operasi')}
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                navigateTo('Pusat Operasi');
+              }
+            }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
               <rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
@@ -501,10 +585,16 @@ export const SugengDashboard: React.FC = () => {
               <rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
             </svg>
             Pusat Operasi
-          </button>
-          <button
+          </a>
+          <a
+            href="/logistik-armada"
             className={`nav-item ${activeNav === 'Logistik Armada' ? 'active' : ''}`}
-            onClick={() => setActiveNav('Logistik Armada')}
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                navigateTo('Logistik Armada');
+              }
+            }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
               <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
@@ -512,10 +602,16 @@ export const SugengDashboard: React.FC = () => {
               <circle cx="17.5" cy="18" r="2" fill="white" stroke="currentColor" strokeWidth="1.7" />
             </svg>
             Logistik Armada
-          </button>
-          <button
+          </a>
+          <a
+            href="/diagnostik-iot"
             className={`nav-item ${activeNav === 'Diagnostik IoT' ? 'active' : ''}`}
-            onClick={() => setActiveNav('Diagnostik IoT')}
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                navigateTo('Diagnostik IoT');
+              }
+            }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
               <rect x="7" y="7" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.7" />
@@ -527,17 +623,23 @@ export const SugengDashboard: React.FC = () => {
               />
             </svg>
             Diagnostik IoT
-          </button>
-          <button
+          </a>
+          <a
+            href="/inventaris"
             className={`nav-item ${activeNav === 'Inventaris' ? 'active' : ''}`}
-            onClick={() => setActiveNav('Inventaris')}
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                navigateTo('Inventaris');
+              }
+            }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
               <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
               <path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12.2V21" stroke="currentColor" strokeWidth="1.7" />
             </svg>
             Inventaris
-          </button>
+          </a>
         </nav>
 
         {/* Status Koneksi Realtime WSS & Hardware ESP32 */}
@@ -1166,7 +1268,7 @@ export const SugengDashboard: React.FC = () => {
                 <button
                   className="primary-btn"
                   onClick={() => {
-                    setActiveNav('Logistik Armada');
+                    navigateTo('Logistik Armada');
                     showToast(`Membuka rute logistik untuk penanganan ${selectedNode.name}.`);
                   }}
                 >
@@ -1581,7 +1683,7 @@ export const SugengDashboard: React.FC = () => {
                             className="conn-btn"
                             onClick={() => {
                               setSelectedId(n.id);
-                              setActiveNav('Pusat Operasi');
+                              navigateTo('Pusat Operasi');
                               showToast(`Menampilkan ${n.name} di Pusat Operasi.`);
                             }}
                           >
