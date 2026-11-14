@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f6f7f3">
+<title>SUGENG — Pengelolaan Sampah Lebih Cerdas (A3 Single-Page Edition)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#18211c;--muted:#657168;--green:#285b43;--lime:#d9ef8b;--paper:#f6f7f3;--white:#fff;--line:#dfe5dc;--soft:#edf2e9}
+*{box-sizing:border-box}
+html{background:#e9ede7}
+body{margin:0;padding:22px 16px 44px;background:#e9ede7;color:var(--ink);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.toolbar{max-width:1080px;margin:0 auto 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 2px 8px rgba(24,33,28,0.04)}
+.toolbar strong{font-size:12px;letter-spacing:.04em}
+.toolbar span{font-size:11px;color:var(--muted);margin-left:8px}
+.toolbar-actions{display:flex;align-items:center;gap:8px}
+.toolbar button{border:0;border-radius:7px;padding:9px 15px;background:var(--green);color:#fff;font-weight:700;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.toolbar button:hover{background:#1e4734}
+.poster{width:min(100%,1080px);margin:auto;background:var(--paper);padding:34px 44px 28px;box-shadow:0 16px 50px #18211c14;overflow:hidden}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--muted);font-weight:600}
+.logo{display:flex;align-items:center;gap:12px;color:var(--green);font-weight:900;letter-spacing:-.04em;font-size:23px}
+.logo-img{width:48px;height:48px;object-fit:contain;display:block}
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;align-items:center;padding:22px 0 20px}
+.eyebrow{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);font-weight:800}
+.hero h1{font-family:Manrope,sans-serif;font-size:clamp(32px,3.8vw,48px);line-height:1.02;letter-spacing:-.055em;margin:9px 0 12px;font-weight:800;max-width:560px}
+.hero h1 em{font-style:normal;color:var(--green)}
+.hero p{font-size:13.5px;line-height:1.6;color:var(--muted);max-width:530px;margin:0}
+.hero-art{background:var(--soft);border-radius:18px;padding:12px;min-height:220px;display:grid;place-items:center}
+.hero-art svg{width:100%;max-width:350px;height:auto}
+.pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px}
+.pill{border:1px solid #cbd8cb;border-radius:24px;padding:6px 11px;color:var(--green);font-size:9.5px;font-weight:700;background:#fff}
+.problem{background:var(--green);color:#fff;border-radius:15px;padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center}
+.problem h2{font:800 21px/1.15 Manrope,sans-serif;letter-spacing:-.035em;margin:0 0 7px}
+.problem p{margin:0;color:#dce8df;font-size:11.5px;line-height:1.58}
+.problem-stat{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.bigstat{padding:11px 13px;border:1px solid #ffffff3b;border-radius:11px}
+.bigstat b{font:800 24px Manrope,sans-serif;display:block;letter-spacing:-.05em;color:var(--lime)}
+.bigstat span{font-size:9px;line-height:1.4;color:#e0e9e2;display:block;margin-top:3px}
+.section{padding:20px 0;border-bottom:1px solid var(--line)}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:14px}
+.section h2{font:800 21px/1.1 Manrope,sans-serif;letter-spacing:-.04em;margin:5px 0 0}
+.section-intro{max-width:380px;color:var(--muted);font-size:10.5px;line-height:1.55}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.step{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 15px}
+.step .num{width:25px;height:25px;border-radius:8px;background:var(--soft);color:var(--green);display:grid;place-items:center;font-size:11.5px;font-weight:800}
+.step-visual{height:74px;margin:9px 0 2px;border-radius:9px;background:linear-gradient(135deg,#f1f5ed,#e7eee4);display:grid;place-items:center;overflow:hidden}
+.step-visual svg{width:100%;height:100%;max-width:190px}
+.step h3{font-size:13.5px;margin:9px 0 5px;letter-spacing:-.02em}
+.step p{font-size:10.5px;line-height:1.5;color:var(--muted);margin:0}
+.benefits{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.benefit{display:flex;gap:11px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:12px}
+.benefit-icon{width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:var(--soft);display:grid;place-items:center;color:var(--green)}
+.benefit-icon svg{width:22px;height:22px}
+.benefit h3{font-size:12.5px;margin:1px 0 4px}
+.benefit p{font-size:10px;line-height:1.5;color:var(--muted);margin:0}
+.impact{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin:18px 0 10px}
+.impact-card{padding:14px 16px;border-radius:12px;background:var(--lime)}
+.impact-card:nth-child(2){background:#e7eee4}
+.impact-card:nth-child(3){background:#e2eae7}
+.impact-card b{font:800 26px Manrope,sans-serif;letter-spacing:-.05em;color:var(--green);display:block}
+.impact-card span{display:block;font-size:10px;line-height:1.45;color:#4f6154;margin-top:4px}
+.note{font-size:8.5px;color:var(--muted);line-height:1.45;margin-top:-4px}
+.closing{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:16px 20px;background:#e8eee6;border-radius:14px;margin:18px 0}
+.closing h2{font:800 19px/1.15 Manrope,sans-serif;letter-spacing:-.035em;margin:0 0 5px}
+.closing p{font-size:10.5px;color:var(--muted);line-height:1.55;margin:0;max-width:560px}
+.closing .tag{padding:10px 14px;background:var(--green);color:white;border-radius:8px;font-size:10.5px;font-weight:800;white-space:nowrap}
+.footer{border-top:1px solid var(--line);padding-top:14px;display:grid;grid-template-columns:1.2fr 1fr;gap:20px}
+.institution b{font-size:10.5px}
+.institution p{font-size:9px;line-height:1.55;color:var(--muted);margin:4px 0 0}
+.team{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.person small{font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;display:block;margin-bottom:3px}
+.person b{font-size:9px;display:block}
+.person span{font-size:8px;color:var(--muted)}
+.bottom{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding-top:8px;border-top:1px solid var(--line);font-size:8px;color:var(--muted)}
+@media (max-width: 720px){
+  body{padding:10px 7px 25px}
+  .poster{padding:20px 16px}
+  .topline{flex-direction:column;align-items:flex-start;gap:8px}
+  .hero{grid-template-columns:1fr;padding:16px 0}
+  .problem{grid-template-columns:1fr}
+  .steps{grid-template-columns:1fr}
+  .benefits{grid-template-columns:1fr}
+  .impact{grid-template-columns:1fr}
+  .closing{grid-template-columns:1fr}
+  .footer{grid-template-columns:1fr}
+  .team{grid-template-columns:1fr 1fr}
+}
+@media print{
+  @page{size:A3 portrait;margin:7mm 9mm}
+  html,body{background:#fff!important;padding:0!important;margin:0!important}
+  .toolbar{display:none!important}
+  .poster{width:100%!important;max-width:none!important;padding:0!important;box-shadow:none!important;margin:0!important}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
+</style>
+</head>
+<body>
+<div class="toolbar"><div><strong>SUGENG / PUBLIC & INVESTOR OVERVIEW</strong><span>Format Ringkas · Pas 1 Lembar Cetak A3</span></div><button onclick="window.print()">Cetak / Simpan PDF (1 Halaman A3) ↗</button></div>
+<main class="poster">
+<header class="topline">
+ <div class="logo"><img class="logo-img" src="./LOGO_SUGENG_IMUP.png" alt="Logo SUGENG"><span>SUGENG</span></div>
+ <span>Solusi pengelolaan sampah untuk Kota Magelang</span>
+</header>
+
+<section class="hero">
+ <div>
+  <div class="eyebrow">Lingkungan lebih bersih · Layanan lebih efisien</div>
+  <h1>Sampah terpantau.<br><em>Penanganan lebih tepat.</em></h1>
+  <p>SUGENG membantu pengelola persampahan mengetahui kondisi tempat penampungan, menentukan lokasi yang perlu ditangani lebih dulu, dan merencanakan perjalanan truk dengan lebih efisien.</p>
+  <div class="pills"><span class="pill">Informasi kondisi TPS</span><span class="pill">Prioritas pengangkutan</span><span class="pill">Rute lebih efisien</span></div>
+ </div>
+ <div class="hero-art">
+  <svg viewBox="0 0 430 300" role="img" aria-label="Ilustrasi tempat sampah pintar terhubung dengan armada pengangkut">
+   <path d="M18 255H410" stroke="#c5d4c6" stroke-width="2"/>
+   <circle cx="350" cy="58" r="25" fill="#d9ef8b"/>
+   <path d="M340 59q10-18 20 0M345 66q5-9 10 0" fill="none" stroke="#285b43" stroke-width="2" stroke-linecap="round"/>
+   <g transform="translate(48 46)">
+    <path d="M33 54h130l-10 145H43z" fill="#fff" stroke="#285b43" stroke-width="3"/>
+    <path d="M24 48h148v15H24z" rx="4" fill="#285b43"/>
+    <path d="M47 40h100l-8-17H55z" fill="#d9ef8b" stroke="#285b43" stroke-width="2"/>
+    <path d="M67 24l-5-13h68l-5 13" fill="none" stroke="#285b43" stroke-width="2"/>
+    <rect x="67" y="92" width="63" height="33" rx="7" fill="#edf2e9"/>
+    <path d="M78 108h41" stroke="#285b43" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="62" cy="207" r="12" fill="#285b43"/><circle cx="138" cy="207" r="12" fill="#285b43"/>
+    <path d="M86 139q27 19 53 0" fill="none" stroke="#d9ef8b" stroke-width="4"/>
+   </g>
+   <g transform="translate(242 158)">
+    <rect x="0" y="24" width="132" height="56" rx="9" fill="#285b43"/>
+    <path d="M93 24h27l17 24v32H93z" fill="#285b43"/>
+    <path d="M105 31h13l11 16h-24z" fill="#d9ef8b"/>
+    <rect x="12" y="35" width="69" height="27" rx="4" fill="#d9ef8b"/>
+    <circle cx="32" cy="82" r="12" fill="#18211c"/><circle cx="111" cy="82" r="12" fill="#18211c"/>
+    <circle cx="32" cy="82" r="5" fill="#fff"/><circle cx="111" cy="82" r="5" fill="#fff"/>
+   </g>
+   <path d="M174 103C220 69 263 88 291 145" fill="none" stroke="#285b43" stroke-width="2.5" stroke-dasharray="5 6" stroke-linecap="round"/>
+   <circle cx="215" cy="83" r="5" fill="#285b43"/><circle cx="269" cy="111" r="5" fill="#285b43"/>
+   <g font-family="DM Sans" fill="#285b43" font-size="10" font-weight="700"><text x="19" y="284">TPS TERPANTAU</text><text x="278" y="284">ARMADA TERARAH</text></g>
+  </svg>
+ </div>
+</section>
+
+<section class="problem">
+ <div><h2>Masalahnya bukan hanya jumlah sampah, tetapi juga kapan dan ke mana harus mengangkutnya.</h2><p>Tanpa informasi kondisi TPS, armada berisiko mendatangi lokasi yang belum penuh sementara lokasi lain sudah membutuhkan penanganan. Akibatnya, waktu, bahan bakar, dan tenaga kurang optimal.</p></div>
+ <div class="problem-stat">
+  <div class="bigstat"><b>65–76</b><span>ton sampah per hari yang menjadi beban TPSA Banyuurip, berdasarkan materi proyek</span></div>
+  <div class="bigstat"><b>2028</b><span>proyeksi kapasitas TPSA mencapai batas menurut materi proyek</span></div>
+ </div>
+</section>
+
+<section class="section">
+ <div class="section-head"><div><div class="eyebrow">Cara kerja</div><h2>Sederhana: pantau, tentukan prioritas, lalu bergerak.</h2></div><p class="section-intro">Informasi dari lapangan membantu petugas mengambil keputusan yang lebih cepat dan terarah.</p></div>
+ <div class="steps">
+  <article class="step"><div class="num">01</div><div class="step-visual"><svg viewBox="0 0 220 100" aria-hidden="true"><circle cx="177" cy="23" r="13" fill="#d9ef8b"/><path d="M62 33h83l-7 54H69z" fill="#fff" stroke="#285b43" stroke-width="2.5"/><path d="M55 28h97v9H55z" rx="3" fill="#285b43"/><path d="M77 21h54l-5-10H82z" fill="#d9ef8b" stroke="#285b43" stroke-width="2"/><path d="M76 63q18-12 36 0t35 0" fill="none" stroke="#9abf72" stroke-width="5"/><path d="M103 47v-9m-5 5 5-5 5 5" stroke="#285b43" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M39 88h139" stroke="#c5d4c6" stroke-width="2"/></svg></div><h3>Kondisi TPS diketahui</h3><p>Perangkat pemantau membantu mengetahui seberapa penuh tempat penampungan dan kondisi lingkungannya.</p></article>
+  <article class="step"><div class="num">02</div><div class="step-visual"><svg viewBox="0 0 220 100" aria-hidden="true"><rect x="37" y="13" width="146" height="75" rx="8" fill="#fff" stroke="#285b43" stroke-width="2"/><path d="M37 27h146" stroke="#dfe5dc" stroke-width="2"/><circle cx="48" cy="20" r="2" fill="#9abf72"/><circle cx="56" cy="20" r="2" fill="#d9ef8b"/><rect x="49" y="38" width="38" height="37" rx="5" fill="#edf2e9"/><path d="M57 65V55m9 10V48m9 17V43" stroke="#285b43" stroke-width="5" stroke-linecap="round"/><path d="M101 43h63m-63 12h48m-48 12h56" stroke="#b8c8b9" stroke-width="4" stroke-linecap="round"/><circle cx="163" cy="42" r="7" fill="#d9ef8b" stroke="#285b43" stroke-width="1.5"/></svg></div><h3>Lokasi prioritas ditentukan</h3><p>Informasi dikumpulkan dalam satu dashboard agar petugas dapat melihat TPS yang perlu ditangani lebih dahulu.</p></article>
+  <article class="step"><div class="num">03</div><div class="step-visual"><svg viewBox="0 0 220 100" aria-hidden="true"><path d="M40 67q27-49 65-14t72-18" fill="none" stroke="#9abf72" stroke-width="3" stroke-dasharray="5 5"/><circle cx="40" cy="67" r="7" fill="#d9ef8b" stroke="#285b43" stroke-width="2"/><circle cx="105" cy="53" r="7" fill="#d9ef8b" stroke="#285b43" stroke-width="2"/><circle cx="177" cy="35" r="7" fill="#d9ef8b" stroke="#285b43" stroke-width="2"/><g transform="translate(76 56)"><rect x="0" y="0" width="62" height="26" rx="5" fill="#285b43"/><path d="M43 0h12l11 12v14H43z" fill="#285b43"/><path d="M48 4h7l7 8H48z" fill="#d9ef8b"/><circle cx="14" cy="28" r="5" fill="#18211c"/><circle cx="53" cy="28" r="5" fill="#18211c"/></g></svg></div><h3>Rute armada direncanakan</h3><p>Sistem membantu menyusun urutan kunjungan dengan mempertimbangkan lokasi dan kapasitas kendaraan.</p></article>
+ </div>
+</section>
+
+<section class="section">
+ <div class="section-head"><div><div class="eyebrow">Manfaat yang dituju</div><h2>Dampak untuk kota, petugas, dan masyarakat.</h2></div></div>
+ <div class="benefits">
+  <article class="benefit"><div class="benefit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#285b43" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 10 11l4 4 6-8"/><path d="M14 7h6v6"/></svg></div><div><h3>Pengangkutan lebih efisien</h3><p>Rute yang lebih terencana berpotensi mengurangi perjalanan yang tidak perlu, waktu tempuh, dan penggunaan bahan bakar.</p></div></article>
+  <article class="benefit"><div class="benefit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#285b43" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><path d="M12 2v3m10 7h-3M12 22v-3M2 12h3"/></svg></div><div><h3>Respons lebih cepat</h3><p>Petugas mendapat gambaran kondisi TPS sehingga lokasi yang mendekati penuh dapat diprioritaskan.</p></div></article>
+  <article class="benefit"><div class="benefit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#285b43" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 4.5C11 4 5 7.5 5 14c0 3 2 5 5 5 6.5 0 10-6 9.5-14.5Z"/><path d="M4 21c3-5 6-8 11-11"/></svg></div><div><h3>Lingkungan lebih terjaga</h3><p>Pemantauan kondisi tempat penampungan mendukung upaya mengurangi risiko sampah menumpuk dan meluap.</p></div></article>
+  <article class="benefit"><div class="benefit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#285b43" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div><div><h3>Keputusan berbasis informasi</h3><p>Data kondisi lapangan dapat menjadi bahan evaluasi dan perencanaan layanan persampahan.</p></div></article>
+ </div>
+</section>
+
+<div class="impact">
+ <div class="impact-card"><b>35%</b><span>Potensi penghematan bahan bakar yang ditargetkan melalui perencanaan rute lebih efisien.</span></div>
+ <div class="impact-card"><b>9 titik</b><span>Rencana pemantauan pada TPS strategis sebagai tahap pengembangan proyek.</span></div>
+ <div class="impact-card"><b>24/7</b><span>Tujuan pemantauan kondisi TPS secara berkelanjutan.</span></div>
+</div>
+<p class="note">Angka di atas merupakan target, estimasi, atau rencana yang tercantum dalam materi proyek; hasil aktual perlu dibuktikan melalui penerapan dan evaluasi lapangan.</p>
+
+<section class="closing">
+ <div><h2>Membangun layanan persampahan yang lebih responsif.</h2><p>SUGENG dikembangkan sebagai solusi pendukung pengelolaan sampah Kota Magelang melalui kolaborasi teknologi, pemerintah daerah, dan kebutuhan masyarakat.</p></div>
+ <div class="tag">Satu kota · Lebih terarah</div>
+</section>
+
+<footer class="footer">
+ <div class="institution"><b>UNIVERSITAS TIDAR · FAKULTAS TEKNIK · TEKNOLOGI INFORMASI</b><p>Proyek Akhir Mata Kuliah Internet of Things (IoT) · Tahun Akademik 2026/2027<br>Bekerja sama dengan Dinas Lingkungan Hidup (DLH) Kota Magelang</p></div>
+ <div class="team">
+  <div class="person"><small>Tim proyek</small><b>Farrel Apriandry Ciu</b><span>2430506056</span></div>
+  <div class="person"><small>Tim proyek</small><b>Nabila Syafiqah Z. F.</b><span>2430506058</span></div>
+  <div class="person"><small>Dosen pengampu</small><b>M. Maksum Hidayat, M.Kom</b><span>199506302025061003</span></div>
+ </div>
+</footer>
+<div class="bottom"><span>SUGENG · SMART WASTE MANAGEMENT</span><span>UNIVERSITAS TIDAR × DLH KOTA MAGELANG</span></div>
+</main>
+</body>
+</html>
