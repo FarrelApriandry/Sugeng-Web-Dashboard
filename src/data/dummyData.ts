@@ -161,9 +161,9 @@ export interface CVRPSolution {
 
 export const POOL_DEPOT: { name: string; coordinates: [number, number]; lat: number; lng: number; address: string } = {
   name: 'Pool DLH Kota Magelang (Depot)',
-  coordinates: [-7.4681, 110.2435],
-  lat: -7.4681,
-  lng: 110.2435,
+  coordinates: [-7.444152, 110.230185],
+  lat: -7.444152,
+  lng: 110.230185,
   address: 'Jl. Barito II, Sidotopo, Kedungsari, Magelang Utara'
 };
 
