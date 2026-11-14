@@ -3,12 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SUGENG - Alur Integrasi Data Arsitektur IoT</title>
+  <title>SUGENG - Alur Integrasi Data (Full Height & Siap Ekspor PDF)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.8/dist/mermaid.min.js"></script>
   <style>
+    @page {
+      size: auto;
+      margin: 12mm 15mm;
+    }
     :root {
       --bg: #f4f7f5;
       --surface: #ffffff;
@@ -76,10 +80,11 @@
       font-size: 13.5px;
       margin-top: 4px;
     }
-    .header-meta {
+    .header-actions {
       display: flex;
       gap: 12px;
       align-items: center;
+      flex-wrap: wrap;
     }
     .header-meta span {
       font-family: var(--font-mono);
@@ -90,18 +95,39 @@
       border: 1px solid #d5e2d8;
       color: #274030;
     }
+    .btn-pdf-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 38px;
+      padding: 0 16px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      color: #ffffff;
+      background: var(--green);
+      border: 1px solid var(--green-dark);
+      border-radius: 7px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(23, 107, 73, 0.25);
+      transition: all 0.15s ease;
+    }
+    .btn-pdf-main:hover {
+      background: var(--green-dark);
+      transform: translateY(-1px);
+    }
     .main-wrap {
       max-width: 1540px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      gap: 32px;
     }
     .diagram-card {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 20px 24px 20px;
+      padding: 22px 24px 24px;
       box-shadow: 0 4px 18px rgba(18, 42, 28, 0.04);
       display: flex;
       flex-direction: column;
@@ -110,7 +136,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       flex-wrap: wrap;
       gap: 12px;
     }
@@ -167,50 +193,44 @@
       text-align: center;
       padding: 0 4px;
     }
-    /* Pan-Zoom Canvas Viewport */
+
+    /* FULL HEIGHT VIEWPORT */
     .viewport {
       width: 100%;
-      height: 860px;
+      height: auto;
+      min-height: 400px;
       position: relative;
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: visible;
       background: radial-gradient(#dbe4de 1px, transparent 1px) 0 0 / 22px 22px, #ffffff;
       border: 1px solid var(--line);
       border-radius: 9px;
-      cursor: grab;
-      user-select: none;
-      transition: height 0.2s ease;
+      padding: 32px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
     }
-    .viewport:active {
-      cursor: grabbing;
+    .diagram-stage {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      position: relative;
+      transition: width 0.15s ease;
     }
-    .pan-canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      transform-origin: 0 0;
-      will-change: transform;
-      display: inline-block;
-      padding: 30px;
-    }
-    .pan-canvas svg {
+    .diagram-stage svg {
       display: block !important;
-      max-width: none !important;
+      max-width: 100% !important;
       height: auto !important;
     }
-    /* Fullscreen state */
-    .viewport:fullscreen,
-    .viewport:-webkit-full-screen {
-      height: 100vh !important;
-      border-radius: 0;
-      border: 0;
-    }
+
     .helper-tip {
       font-size: 11.5px;
       color: #687e70;
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-top: 10px;
+      margin-top: 12px;
       flex-wrap: wrap;
     }
     .helper-tip kbd {
@@ -230,6 +250,64 @@
       color: var(--muted);
       font-family: var(--font-mono);
     }
+
+    /* PRINT & PDF EXPORT STYLES */
+    @media print {
+      *, *:before, *:after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        color: #000000 !important;
+      }
+      .header-bar {
+        border: 1px solid #d3dfd6 !important;
+        box-shadow: none !important;
+        margin-bottom: 20px !important;
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+      .controls-toolbar, .helper-tip, .btn-pdf-main, .header-meta {
+        display: none !important;
+      }
+      .main-wrap {
+        max-width: 100% !important;
+        gap: 20px !important;
+      }
+      .diagram-card {
+        border: 1px solid #d3dfd6 !important;
+        box-shadow: none !important;
+        margin-bottom: 30px !important;
+        padding: 16px !important;
+      }
+      .diagram-card:first-of-type {
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .viewport {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+      }
+      .diagram-stage {
+        width: 100% !important;
+        display: block !important;
+      }
+      .diagram-stage svg {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        display: block !important;
+      }
+      footer {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -237,11 +315,16 @@
     <div>
       <div class="badge">Arsitektur Terpadu Sistem SUGENG</div>
       <h1>Alur Integrasi Data: Edge IoT ke Dashboard Web SIG</h1>
-      <p class="lead">Pemodelan pipeline transmisi data telemetri, middleware ingesti berkecepatan tinggi, persistensi spasial PostGIS, hingga pemetaan rute dinamis CVRP.</p>
+      <p class="lead">Visualisasi penuh end-to-end arsitektur 5-tier dan diagram urutan sinkronisasi real-time siap ekspor PDF.</p>
     </div>
-    <div class="header-meta">
-      <span>Versi: 2.1 Enterprise</span>
-      <span>PostGIS EPSG:4326</span>
+    <div class="header-actions">
+      <div class="header-meta">
+        <span>PostGIS EPSG:4326</span>
+      </div>
+      <button class="btn-pdf-main" onclick="window.print()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+        Cetak / Ekspor ke PDF
+      </button>
     </div>
   </div>
 
@@ -251,9 +334,9 @@
       <div class="card-head">
         <div class="card-titles">
           <h2>1. Diagram Alur Integrasi End-to-End (5-Tier Architecture)</h2>
-          <p>Keterhubungan sensor fisik di TPS, modul komputasi ESP32, gateway Elysia.js, Supabase PostGIS, solver OR-Tools, dan dashboard SIG.</p>
+          <p>Keterhubungan sensor fisik TPS, modul ESP32, gateway Elysia.js, Supabase PostGIS, solver OR-Tools, dan dashboard SIG.</p>
         </div>
-        <div class="controls-toolbar" data-target="viewport-flowchart">
+        <div class="controls-toolbar" data-target="stage-flowchart">
           <button class="ctrl-btn btn-zoom-in" title="Perbesar diagram (+)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>
             Zoom +
@@ -264,16 +347,16 @@
           </button>
           <span class="zoom-level-badge">100%</span>
           <button class="ctrl-btn btn-reset" title="Kembalikan ukuran asli 100%">100%</button>
-          <button class="ctrl-btn btn-fit-width" title="Sesuaikan diagram selebar kontainer">↔ Pas Lebar</button>
-          <button class="ctrl-btn btn-fit-all" title="Lihat seluruh diagram (Bird's Eye)">⊡ Pas Layar</button>
-          <button class="ctrl-btn btn-toggle-scroll" title="Buka tinggi penuh tanpa batas gulir kanvas">↕ Buka Penuh</button>
-          <button class="ctrl-btn btn-fullscreen" title="Buka layar penuh">⛶ Fullscreen</button>
+          <button class="ctrl-btn btn-fit" title="Sesuaikan lebar diagram">↔ Pas Lebar</button>
+          <button class="ctrl-btn btn-print-card" onclick="window.print()" title="Cetak / Ekspor PDF">
+            🖨️ PDF
+          </button>
           <button class="ctrl-btn btn-download-svg" title="Unduh diagram format vektor SVG">⬇ SVG</button>
         </div>
       </div>
 
-      <div class="viewport" id="viewport-flowchart">
-        <div class="pan-canvas" id="canvas-flowchart">
+      <div class="viewport">
+        <div class="diagram-stage" id="stage-flowchart">
           <div class="mermaid">
 flowchart TD
     %% ==========================================================================
@@ -377,7 +460,7 @@ flowchart TD
         </div>
       </div>
       <div class="helper-tip">
-        <span>💡 <strong>Navigasi Interaktif:</strong> Geser mouse <kbd>Drag & Pan</kbd> untuk menggeser kanvas · Putar <kbd>Scroll Mouse</kbd> untuk Zoom · Klik ganda <kbd>Double Click</kbd> untuk Pas Lebar · Tombol <kbd>↕ Buka Penuh</kbd> untuk melihat seluruh diagram secara utuh</span>
+        <span>💡 <strong>Full Height Render:</strong> Diagram ditampilkan utuh dari atas ke bawah tanpa pemotongan kontainer. Siap diekspor ke PDF via tombol <kbd>Cetak / Ekspor ke PDF</kbd> atau <kbd>Ctrl + P</kbd>.</span>
       </div>
     </div>
 
@@ -388,7 +471,7 @@ flowchart TD
           <h2>2. Diagram Urutan Interaksi & Sinkronisasi Real-Time (Sequence Diagram)</h2>
           <p>Tahapan alur pengiriman nirkabel berkala, direct USB testing laboratorium, perubahan data WAL, dan eksekusi optimasi armada.</p>
         </div>
-        <div class="controls-toolbar" data-target="viewport-sequence">
+        <div class="controls-toolbar" data-target="stage-sequence">
           <button class="ctrl-btn btn-zoom-in" title="Perbesar diagram (+)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>
             Zoom +
@@ -399,16 +482,16 @@ flowchart TD
           </button>
           <span class="zoom-level-badge">100%</span>
           <button class="ctrl-btn btn-reset" title="Kembalikan ukuran asli 100%">100%</button>
-          <button class="ctrl-btn btn-fit-width" title="Sesuaikan diagram selebar kontainer">↔ Pas Lebar</button>
-          <button class="ctrl-btn btn-fit-all" title="Lihat seluruh diagram (Bird's Eye)">⊡ Pas Layar</button>
-          <button class="ctrl-btn btn-toggle-scroll" title="Buka tinggi penuh tanpa batas gulir kanvas">↕ Buka Penuh</button>
-          <button class="ctrl-btn btn-fullscreen" title="Buka layar penuh">⛶ Fullscreen</button>
+          <button class="ctrl-btn btn-fit" title="Sesuaikan lebar diagram">↔ Pas Lebar</button>
+          <button class="ctrl-btn btn-print-card" onclick="window.print()" title="Cetak / Ekspor PDF">
+            🖨️ PDF
+          </button>
           <button class="ctrl-btn btn-download-svg" title="Unduh diagram format vektor SVG">⬇ SVG</button>
         </div>
       </div>
 
-      <div class="viewport" id="viewport-sequence">
-        <div class="pan-canvas" id="canvas-sequence">
+      <div class="viewport">
+        <div class="diagram-stage" id="stage-sequence">
           <div class="mermaid">
 sequenceDiagram
     autonumber
@@ -462,7 +545,7 @@ sequenceDiagram
         </div>
       </div>
       <div class="helper-tip">
-        <span>💡 <strong>Navigasi Interaktif:</strong> Geser mouse <kbd>Drag & Pan</kbd> untuk menggeser kanvas · Putar <kbd>Scroll Mouse</kbd> untuk Zoom · Klik ganda <kbd>Double Click</kbd> untuk Pas Lebar · Tombol <kbd>↕ Buka Penuh</kbd> untuk melihat seluruh diagram secara utuh</span>
+        <span>💡 <strong>Full Height Render:</strong> Diagram urutan interaksi multi-fase tampil penuh tanpa terpotong kotak kanvas.</span>
       </div>
     </div>
 
@@ -472,12 +555,11 @@ sequenceDiagram
   </div>
 
   <script>
-    // 1. Inisialisasi Mermaid dengan ukuran font yang besar dan jelas
     mermaid.initialize({
       startOnLoad: true,
       theme: 'base',
       themeVariables: {
-        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontFamily: "'DM Sans', sans-serif",
         fontSize: '15px',
         primaryColor: '#f2f7f4',
         primaryBorderColor: '#176b49',
@@ -503,207 +585,61 @@ sequenceDiagram
       }
     });
 
-    // 2. Controller Interaktif Pan & Zoom
-    function setupInteractiveViewport(viewportId, canvasId, toolbar) {
-      const viewport = document.getElementById(viewportId);
-      const canvas = document.getElementById(canvasId);
-      if (!viewport || !canvas) return;
+    // Controller Zoom & Download
+    function setupDiagramController(stageId, toolbar) {
+      const stage = document.getElementById(stageId);
+      if (!stage) return;
 
-      let scale = 1.0;
-      let posX = 20;
-      let posY = 24;
-      let isDragging = false;
-      let startX = 0;
-      let startY = 0;
-      let isFullHeight = false;
-
+      let currentScale = 1.0;
       const badge = toolbar.querySelector('.zoom-level-badge');
 
-      function updateTransform() {
-        if (isFullHeight) {
-          canvas.style.transform = 'none';
-          if (badge) badge.textContent = '100%';
-          return;
+      function applyScale(scale) {
+        currentScale = Math.min(2.5, Math.max(0.3, scale));
+        const svg = stage.querySelector('svg');
+        if (svg) {
+          if (currentScale === 1.0) {
+            svg.style.maxWidth = '100%';
+            svg.style.width = 'auto';
+          } else {
+            svg.style.maxWidth = 'none';
+            svg.style.width = `${Math.round(currentScale * 100)}%`;
+          }
         }
-        canvas.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
-        if (badge) badge.textContent = `${Math.round(scale * 100)}%`;
+        if (badge) badge.textContent = `${Math.round(currentScale * 100)}%`;
       }
 
-      function zoom(factor, centerX, centerY) {
-        if (isFullHeight) return;
-        const prevScale = scale;
-        scale = Math.min(3.5, Math.max(0.25, scale * factor));
-        if (centerX !== undefined && centerY !== undefined) {
-          posX = centerX - (centerX - posX) * (scale / prevScale);
-          posY = centerY - (centerY - posY) * (scale / prevScale);
+      toolbar.querySelector('.btn-zoom-in')?.addEventListener('click', () => applyScale(currentScale + 0.15));
+      toolbar.querySelector('.btn-zoom-out')?.addEventListener('click', () => applyScale(currentScale - 0.15));
+      toolbar.querySelector('.btn-reset')?.addEventListener('click', () => applyScale(1.0));
+      toolbar.querySelector('.btn-fit')?.addEventListener('click', () => {
+        const svg = stage.querySelector('svg');
+        if (svg) {
+          svg.style.maxWidth = '100%';
+          svg.style.width = '100%';
         }
-        updateTransform();
-      }
-
-      function fitToWidth() {
-        if (isFullHeight) return;
-        const svg = canvas.querySelector('svg');
-        if (!svg) return;
-        const vRect = viewport.getBoundingClientRect();
-        const sRect = svg.getBoundingClientRect();
-        const unscaledW = sRect.width / scale;
-
-        const scaleX = (vRect.width - 40) / unscaledW;
-        scale = Math.min(1.0, Math.max(0.35, scaleX));
-
-        posX = Math.max(16, (vRect.width - unscaledW * scale) / 2);
-        posY = 24;
-        updateTransform();
-      }
-
-      function resetZoom() {
-        if (isFullHeight) return;
-        const svg = canvas.querySelector('svg');
-        const vRect = viewport.getBoundingClientRect();
-        const sRect = svg ? svg.getBoundingClientRect() : null;
-        const unscaledW = (svg && sRect) ? (sRect.width / scale) : 1200;
-
-        scale = 1.0;
-        posX = Math.max(16, (vRect.width - unscaledW) / 2);
-        posY = 24;
-        updateTransform();
-      }
-
-      function fitToAll() {
-        if (isFullHeight) return;
-        const svg = canvas.querySelector('svg');
-        if (!svg) return;
-        const vRect = viewport.getBoundingClientRect();
-        const sRect = svg.getBoundingClientRect();
-        const unscaledW = sRect.width / scale;
-        const unscaledH = sRect.height / scale;
-
-        const scaleX = (vRect.width - 40) / unscaledW;
-        const scaleY = (vRect.height - 40) / unscaledH;
-        scale = Math.min(scaleX, scaleY, 1.0);
-        scale = Math.max(0.2, scale);
-
-        posX = Math.max(16, (vRect.width - unscaledW * scale) / 2);
-        posY = Math.max(20, (vRect.height - unscaledH * scale) / 2);
-        updateTransform();
-      }
-
-      // Drag / Pan Events
-      viewport.addEventListener('mousedown', (e) => {
-        if (isFullHeight || e.target.closest('button')) return;
-        isDragging = true;
-        startX = e.clientX - posX;
-        startY = e.clientY - posY;
+        currentScale = 1.0;
+        if (badge) badge.textContent = '100%';
       });
 
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging || isFullHeight) return;
-        posX = e.clientX - startX;
-        posY = e.clientY - startY;
-        updateTransform();
-      });
-
-      window.addEventListener('mouseup', () => {
-        isDragging = false;
-      });
-
-      // Wheel Zoom
-      viewport.addEventListener('wheel', (e) => {
-        if (isFullHeight) return;
-        e.preventDefault();
-        const rect = viewport.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        const factor = e.deltaY < 0 ? 1.15 : 0.87;
-        zoom(factor, mouseX, mouseY);
-      }, { passive: false });
-
-      // Double click to fit width
-      viewport.addEventListener('dblclick', () => {
-        fitToWidth();
-      });
-
-      // Toolbar Buttons
-      toolbar.querySelector('.btn-zoom-in')?.addEventListener('click', () => {
-        const rect = viewport.getBoundingClientRect();
-        zoom(1.2, rect.width / 2, rect.height / 2);
-      });
-
-      toolbar.querySelector('.btn-zoom-out')?.addEventListener('click', () => {
-        const rect = viewport.getBoundingClientRect();
-        zoom(0.83, rect.width / 2, rect.height / 2);
-      });
-
-      toolbar.querySelector('.btn-reset')?.addEventListener('click', resetZoom);
-      toolbar.querySelector('.btn-fit-width')?.addEventListener('click', fitToWidth);
-      toolbar.querySelector('.btn-fit-all')?.addEventListener('click', fitToAll);
-
-      // Toggle Full Height / Continuous Scroll
-      const toggleScrollBtn = toolbar.querySelector('.btn-toggle-scroll');
-      toggleScrollBtn?.addEventListener('click', () => {
-        isFullHeight = !isFullHeight;
-        if (isFullHeight) {
-          viewport.style.height = 'auto';
-          viewport.style.overflow = 'visible';
-          viewport.style.cursor = 'default';
-          canvas.style.position = 'relative';
-          scale = 1.0;
-          posX = 0;
-          posY = 0;
-          updateTransform();
-          toggleScrollBtn.textContent = '⊡ Tutup Kanvas';
-          toggleScrollBtn.style.background = '#e5f1ea';
-          toggleScrollBtn.style.color = 'var(--green)';
-        } else {
-          viewport.style.height = '860px';
-          viewport.style.overflow = 'hidden';
-          viewport.style.cursor = 'grab';
-          canvas.style.position = 'absolute';
-          toggleScrollBtn.textContent = '↕ Buka Penuh';
-          toggleScrollBtn.style.background = '#ffffff';
-          toggleScrollBtn.style.color = '#24382c';
-          fitToWidth();
-        }
-      });
-
-      // Fullscreen
-      toolbar.querySelector('.btn-fullscreen')?.addEventListener('click', () => {
-        if (!document.fullscreenElement) {
-          viewport.requestFullscreen().catch(() => {});
-        } else {
-          document.exitFullscreen().catch(() => {});
-        }
-      });
-
-      // Download SVG
       toolbar.querySelector('.btn-download-svg')?.addEventListener('click', () => {
-        const svg = canvas.querySelector('svg');
+        const svg = stage.querySelector('svg');
         if (!svg) return;
         const svgData = new XMLSerializer().serializeToString(svg);
         const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
         const svgUrl = URL.createObjectURL(svgBlob);
-        const downloadLink = document.createElement('a');
-        downloadLink.href = svgUrl;
-        downloadLink.download = `${viewportId}-diagram.svg`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        const a = document.createElement('a');
+        a.href = svgUrl;
+        a.download = `${stageId}-diagram.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       });
-
-      // Initial auto-fit: Pas Lebar (Fit Width) dengan skala optimal
-      setTimeout(fitToWidth, 600);
-      setTimeout(fitToWidth, 1300);
     }
 
-    // Pasang controller setelah DOM siap
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.controls-toolbar').forEach(tb => {
         const targetId = tb.dataset.target;
-        if (targetId === 'viewport-flowchart') {
-          setupInteractiveViewport('viewport-flowchart', 'canvas-flowchart', tb);
-        } else if (targetId === 'viewport-sequence') {
-          setupInteractiveViewport('viewport-sequence', 'canvas-sequence', tb);
-        }
+        if (targetId) setupDiagramController(targetId, tb);
       });
     });
   </script>
