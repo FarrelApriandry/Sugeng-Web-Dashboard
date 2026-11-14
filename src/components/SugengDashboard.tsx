@@ -624,7 +624,7 @@ export const SugengDashboard: React.FC = () => {
         {activeNav === 'Pusat Operasi' && (
           <section className="workspace" aria-label="Ruang kerja pusat operasi">
             {/* Panel Kiri: Manifest TPS */}
-            <aside className="manifest-panel" aria-label="Daftar manifest TPS">
+            <aside className="panel manifest-panel" aria-label="Daftar manifest TPS">
               <div className="manifest-head">
                 <div className="manifest-title-row">
                   <h2>Manifest TPS</h2>
@@ -736,7 +736,7 @@ export const SugengDashboard: React.FC = () => {
             </aside>
 
             {/* Panel Tengah: Peta Interaktif GIS */}
-            <section className="map-panel" aria-label="Visualisasi spasial TPS">
+            <section className="panel map-panel" aria-label="Visualisasi spasial TPS">
               <div className="map-head">
                 <div className="map-title-block">
                   <h2>Pemetaan TPS & rute pengangkutan</h2>
@@ -771,40 +771,15 @@ export const SugengDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Wrapper Peta Leaflet */}
-              <div className="map-wrap">
-                <InteractiveMap
-                  nodes={nodes}
-                  selectedId={selectedId}
-                  onSelectNode={(id) => setSelectedId(id)}
-                  showSpecial={showSpecial}
-                  fitTrigger={fitTrigger}
-                />
-
-                {/* Legend Overlay */}
-                <div className="map-legend" aria-label="Legenda peta">
-                  <div className="legend-item">
-                    <span className="dot" style={{ background: '#c94e47' }}></span>
-                    <span>Prioritas (≥75%)</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="dot" style={{ background: '#b77924' }}></span>
-                    <span>Siaga (50-74%)</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="dot" style={{ background: '#82958a' }}></span>
-                    <span>Aman (&lt;50%)</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="dot" style={{ background: '#3975a5' }}></span>
-                    <span>Depot / TPA</span>
-                  </div>
-                </div>
-
-                <div className="map-provenance">
-                  {hardwareStatus === 'connected' ? 'Hardware Live Stream (2 Detik)' : 'Supabase Realtime Postgres Stream'}
-                </div>
-              </div>
+              {/* Peta Interaktif Leaflet GIS (Full Height/Width di dalam Card) */}
+              <InteractiveMap
+                nodes={nodes}
+                selectedId={selectedId}
+                onSelectNode={(id) => setSelectedId(id)}
+                showSpecial={showSpecial}
+                fitTrigger={fitTrigger}
+                hardwareActive={hardwareStatus === 'connected'}
+              />
 
               {/* Preview Rute Pengangkutan CVRP Terpadu */}
               <div className="route-preview">
@@ -828,7 +803,7 @@ export const SugengDashboard: React.FC = () => {
             </section>
 
             {/* Panel Kanan: Inspector Node Terpilih */}
-            <aside className="inspector-panel" aria-label="Detail TPS terpilih">
+            <aside className="panel inspector-panel" aria-label="Detail TPS terpilih">
               <div className="inspector-top">
                 <h2>{selectedNode.name}</h2>
                 <div className="inspector-sub">

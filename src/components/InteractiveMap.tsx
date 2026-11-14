@@ -8,6 +8,7 @@ interface Props {
   onSelectNode: (id: string) => void;
   showSpecial: boolean;
   fitTrigger: number;
+  hardwareActive?: boolean;
 }
 
 // API key CARTO Basemaps via env untuk menghilangkan watermark "API key required"
@@ -24,12 +25,14 @@ export const InteractiveMap: React.FC<Props> = ({
   onSelectNode,
   showSpecial,
   fitTrigger,
+  hardwareActive = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<Map<string, any>>(new Map());
   const specialMarkersRef = useRef<any[]>([]);
   const routeLineRef = useRef<any>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
   // Inisialisasi peta Leaflet
@@ -79,12 +82,38 @@ export const InteractiveMap: React.FC<Props> = ({
       }).addTo(map);
 
       setMapReady(true);
+
+      // Invalidate size segera dan berkala agar tiles mengisi 100% tinggi dan lebar kartu
+      setTimeout(() => {
+        if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+      }, 80);
+      setTimeout(() => {
+        if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+      }, 300);
+      setTimeout(() => {
+        if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+      }, 700);
+
+      // Observer responsif terhadap perubahan ukuran container card
+      if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+        const ro = new ResizeObserver(() => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.invalidateSize();
+          }
+        });
+        ro.observe(mapContainerRef.current);
+        resizeObserverRef.current = ro;
+      }
     };
 
     init();
 
     return () => {
       isMounted = false;
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -256,24 +285,29 @@ export const InteractiveMap: React.FC<Props> = ({
       </div>
 
       {/* Kontainer Peta Leaflet */}
-      <div id="map" ref={mapContainerRef} aria-label="Peta interaktif lokasi TPS skenario" className="absolute inset-0 z-10" />
+      <div
+        id="map"
+        ref={mapContainerRef}
+        aria-label="Peta interaktif lokasi TPS"
+        style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, zIndex: 1 }}
+      />
 
       {/* Overlay Atas Kiri */}
       <div className="map-overlay-top">
         <strong>WILAYAH KOTA MAGELANG</strong>
-        <span>Koordinat skenario · WGS 84</span>
+        <span>Koordinat EPSG:4326 · WGS 84</span>
       </div>
 
       {/* Overlay Legenda Bawah Kiri */}
       <div className="map-legend">
         <div className="legend-item">
-          <span className="legend-dot"></span>Prioritas
+          <span className="legend-dot"></span>Prioritas (≥75%)
         </div>
         <div className="legend-item">
-          <span className="legend-dot warning"></span>Siaga
+          <span className="legend-dot warning"></span>Siaga (50-74%)
         </div>
         <div className="legend-item">
-          <span className="legend-dot safe"></span>Aman
+          <span className="legend-dot safe"></span>Aman (&lt;50%)
         </div>
         <div className="legend-item">
           <span className="legend-square"></span>Depot / TPSA
@@ -281,7 +315,9 @@ export const InteractiveMap: React.FC<Props> = ({
       </div>
 
       {/* Overlay Provenance Bawah Kanan */}
-      <div className="map-provenance">Titik TPS: aproksimasi geocoding skenario</div>
+      <div className="map-provenance">
+        {hardwareActive ? 'ESP32 Live Stream (2 Detik)' : 'Supabase Realtime Postgres Stream'}
+      </div>
     </div>
   );
 };
