@@ -33,68 +33,103 @@ interface TelemetryLogEntry {
   detail: string;
 }
 
-// Komponen Indikator Gelas Kepenuhan (Visual Beaker / Container Gauge)
-const GlassGauge: React.FC<{ fill: number; operational: 'critical' | 'warning' | 'safe'; id: string }> = ({
+// Komponen Indikator Tempat Sampah (Visual Waste Bin Gauge)
+interface BinProps {
+  fill: number;
+  operational: 'critical' | 'warning' | 'safe';
+  id?: string;
+  width?: number | string;
+  height?: number | string;
+  className?: string;
+}
+
+const TrashBinSvg: React.FC<BinProps> = ({
   fill,
   operational,
-  id,
+  id = 'default',
+  width = 64,
+  height = 92,
+  className = 'bin-svg',
 }) => {
   const fillPct = Math.max(0, Math.min(100, fill));
-  const liquidH = (fillPct / 100) * 26;
-  const topY = 31.5 - liquidH;
+  // Rentang ketinggian sampah: dari Y=80 (kosong) hingga Y=29 (penuh), rentang tinggi = 51px
+  const fillH = (fillPct / 100) * 51;
+  const topY = 80 - fillH;
+
   const fillColor =
     operational === 'critical'
-      ? 'var(--red)'
+      ? '#C94E47'
       : operational === 'warning'
-      ? 'var(--amber)'
-      : 'var(--green)';
+      ? '#B77924'
+      : '#176B49';
 
-  const clipId = `glass-clip-${id}`;
+  const strokeColor =
+    operational === 'critical'
+      ? '#A83D38'
+      : operational === 'warning'
+      ? '#94601A'
+      : '#115238';
+
+  const clipId = `bin-clip-${id}`;
 
   return (
-    <div className="glass-gauge" title={`Tingkat kepenuhan: ${fmt(fill)}%`}>
-      <svg width="20" height="36" viewBox="0 0 20 36" fill="none" aria-hidden="true">
-        <defs>
-          <clipPath id={clipId}>
-            <path d="M 4 4 L 4.8 29.5 A 2.2 2.2 0 0 0 7 31.5 L 13 31.5 A 2.2 2.2 0 0 0 15.2 29.5 L 16 4 Z" />
-          </clipPath>
-        </defs>
+    <svg
+      className={className}
+      width={width}
+      height={height}
+      viewBox="0 0 64 92"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label={`Ilustrasi tingkat pengisian tempat sampah: ${fmt(fill)}%`}
+    >
+      {/* Handle */}
+      <path d="M25 7H39" stroke="#8C9B90" strokeWidth="3" strokeLinecap="round" />
+      <path d="M27 7V11H37V7" fill="#D9E2DB" stroke="#AAB9AD" />
 
-        {/* Latar belakang tabung gelas */}
-        <path
-          d="M 4 4 L 4.8 29.5 A 2.2 2.2 0 0 0 7 31.5 L 13 31.5 A 2.2 2.2 0 0 0 15.2 29.5 L 16 4 Z"
-          fill="#f1f5f2"
-          stroke="#9fb3a5"
-          strokeWidth="1.2"
-        />
+      {/* Lid */}
+      <path d="M9 13H55L53 19H11L9 13Z" fill="#D9E2DB" stroke="#AAB9AD" strokeWidth="1.5" />
+      <path d="M7 12H57" stroke="#8C9B90" strokeWidth="2.5" strokeLinecap="round" />
 
-        {/* Level keterisian cairan/sampah di dalam gelas */}
-        <g clipPath={`url(#${clipId})`}>
-          <rect x="2" y={topY} width="16" height={liquidH + 3} fill={fillColor} />
-          {fillPct > 2 && (
-            <line
-              x1="3"
-              y1={topY}
-              x2="17"
-              y2={topY}
-              stroke="rgba(255,255,255,0.75)"
-              strokeWidth="1"
+      {/* Bin body */}
+      <path d="M13 20H51L47 83H17L13 20Z" fill="#F0F3F0" stroke="#AAB9AD" strokeWidth="1.5" />
+
+      {/* Trash fill */}
+      <defs>
+        <clipPath id={clipId}>
+          <path d="M15 29H49L45.5 80H18.5L15 29Z" />
+        </clipPath>
+      </defs>
+
+      <g clipPath={`url(#${clipId})`}>
+        {fillPct > 0 && (
+          <>
+            <rect
+              x="13"
+              y={topY}
+              width="38"
+              height={fillH + 4}
+              fill={fillColor}
+              opacity="0.88"
             />
-          )}
-        </g>
+            <line
+              x1="14"
+              y1={topY}
+              x2="50"
+              y2={topY}
+              stroke={strokeColor}
+              strokeWidth="1.5"
+              strokeDasharray="3 2"
+            />
+          </>
+        )}
+      </g>
 
-        {/* Garis batas ukur (Graduation marks: 25%, 50%, 75%) */}
-        <line x1="12" y1="12" x2="15.5" y2="12" stroke="#758c7e" strokeWidth="0.8" opacity="0.8" />
-        <line x1="10.5" y1="18.5" x2="15.5" y2="18.5" stroke="#758c7e" strokeWidth="1" opacity="0.85" />
-        <line x1="12" y1="25" x2="15.5" y2="25" stroke="#758c7e" strokeWidth="0.8" opacity="0.8" />
+      {/* Side details */}
+      <path d="M21 27L23 77M43 27L41 77" stroke="#D0DAD2" strokeWidth="1.5" strokeLinecap="round" />
 
-        {/* Bibir atas gelas */}
-        <rect x="2.5" y="1.5" width="15" height="2.8" rx="1.2" fill="#dce5df" stroke="#8fa496" strokeWidth="1" />
-
-        {/* Efek pantulan cahaya kaca di sisi kiri */}
-        <line x1="5.6" y1="5.5" x2="5.6" y2="27" stroke="rgba(255,255,255,0.6)" strokeWidth="0.9" strokeLinecap="round" />
-      </svg>
-    </div>
+      {/* Bottom */}
+      <path d="M18 85H46" stroke="#8C9B90" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
   );
 };
 
@@ -762,15 +797,24 @@ export const SugengDashboard: React.FC = () => {
                         onClick={() => setSelectedId(n.id)}
                         aria-pressed={isSel}
                       >
-                        <GlassGauge fill={n.fill} operational={n.operational} id={n.id} />
-                        <span className="tps-main">
-                          <span className="tps-code">{n.id}</span>
-                          <span className="tps-name" title={n.name}>{n.name}</span>
-                          <span className="tps-meta">
+                        <TrashBinSvg
+                          fill={n.fill}
+                          operational={n.operational}
+                          id={`manifest-${n.id}`}
+                          width={24}
+                          height={34}
+                          className="mini-bin-svg"
+                        />
+                        <div className="tps-main">
+                          <div className="tps-header-line">
+                            <span className="tps-code">{n.id}</span>
+                          </div>
+                          <div className="tps-name" title={n.name}>{n.name}</div>
+                          <div className="tps-meta">
                             <span>{n.area}</span>
                             <span className="mini-dot"></span>
                             <span>
-                              {freshness(n.age) === 'live' ? 'Live' : freshness(n.age) === 'delayed' ? 'Tertunda' : 'Stale'} · {n.age} m
+                              {freshness(n.age) === 'live' ? 'Live' : freshness(n.age) === 'delayed' ? 'Tertunda' : 'Stale'} · {n.age}m
                             </span>
                             {n.sanitation && (
                               <>
@@ -778,14 +822,14 @@ export const SugengDashboard: React.FC = () => {
                                 <span style={{ color: '#c18a3c', fontWeight: 600 }}>Sanitasi</span>
                               </>
                             )}
-                          </span>
-                        </span>
-                        <span className="tps-value">
+                          </div>
+                        </div>
+                        <div className="tps-value">
                           <span className="tps-percent">{fmt(n.fill)}%</span>
                           <span className={`tps-status ${n.operational}`}>
                             {statusLabel(n.operational)}
                           </span>
-                        </span>
+                        </div>
                       </button>
                     );
                   })
@@ -946,13 +990,14 @@ export const SugengDashboard: React.FC = () => {
 
                   {/* Skematik Wadah Tempat Sampah */}
                   <div className="bin-visual-row">
-                    <svg className="bin-svg" viewBox="0 0 64 92" fill="none" aria-label="Ilustrasi tingkat pengisian wadah">
-                      <path d="M13 17h38l-4 67H17l-4-67Z" fill="#f0f3f0" stroke="#b8c5bb" strokeWidth="1.5" />
-                      <path d="M10 14h44v5H10z" fill="#d9e2db" stroke="#b8c5bb" />
-                      <path d={`M16 ${topY} H48 L45.2 81 H18.8 Z`} fill={binFillColor} opacity=".8" />
-                      <path d="M12 31h40" stroke="#fff" strokeDasharray="2 2" opacity=".8" />
-                      <path d="M18 84h28" stroke="#b8c5bb" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
+                    <TrashBinSvg
+                      fill={selectedNode.fill}
+                      operational={selectedNode.operational}
+                      id={`inspector-${selectedNode.id}`}
+                      width={52}
+                      height={78}
+                      className="bin-svg"
+                    />
                     <div className="bin-legend">
                       <div className="bin-legend-row">
                         <span>Tinggi sampah</span>
