@@ -648,7 +648,7 @@ export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = '
             {/* Indikator Cloud Supabase Realtime WSS */}
             <div className="conn-pill" title={`Supabase Realtime Channel: sugeng-dashboard-realtime (${lastRealtimeUpdate})`}>
               <span className={`dot ${realtimeStatus === 'connected' ? 'connected' : realtimeStatus === 'connecting' ? 'connecting' : 'disconnected'}`}></span>
-              <span>
+              <span className="conn-pill-text">
                 {realtimeStatus === 'connected' ? 'Cloud WSS: Aktif' : realtimeStatus === 'connecting' ? 'Cloud WSS: Sinkron...' : 'Cloud WSS: Terputus'}
               </span>
             </div>
@@ -657,7 +657,7 @@ export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = '
             {hardwareStatus === 'connected' ? (
               <div className="conn-pill" style={{ background: '#eaf4ee', borderColor: '#b5d7bf' }}>
                 <span className="dot connected"></span>
-                <span>ESP32 Live ({hardwareTransport === 'bridge' ? 'Bridge 5050' : 'USB'})</span>
+                <span className="conn-pill-text">ESP32 Live ({hardwareTransport === 'bridge' ? 'Bridge 5050' : 'USB'})</span>
                 <button
                   onClick={handleToggleHardware}
                   style={{ background: 'transparent', border: 'none', color: '#c94e47', cursor: 'pointer', fontWeight: 700, marginLeft: 4 }}
@@ -675,7 +675,7 @@ export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = '
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                   <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
-                {hardwareStatus === 'connecting' ? 'Menghubungkan...' : 'Hubungkan Sensor ESP32'}
+                <span className="conn-btn-text">{hardwareStatus === 'connecting' ? 'Menghubungkan...' : 'Hubungkan Sensor ESP32'}</span>
               </button>
             )}
           </div>
@@ -1354,38 +1354,27 @@ export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = '
                   </div>
 
                   {/* Ringkasan Penghematan CVRP */}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: 8,
-                      padding: 12,
-                      background: '#f6f9f7',
-                      borderRadius: 7,
-                      border: '1px solid #e2eae4',
-                      marginBottom: 16,
-                    }}
-                  >
+                  <div className="cvrp-summary-grid">
                     <div>
-                      <div style={{ fontSize: 9, color: '#6d7d72' }}>Jarak Teroptimasi</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#1a2b20', marginTop: 2 }}>
+                      <div className="summary-label">Jarak Teroptimasi</div>
+                      <div className="summary-val">
                         {fmt(cvrpSolution.totalDistanceKm)} km
                       </div>
-                      <div style={{ fontSize: 8.5, color: 'var(--green)', fontWeight: 600 }}>Hemat 43,7%</div>
+                      <div className="summary-sub" style={{ color: 'var(--green)', fontWeight: 600 }}>Hemat 43,7%</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 9, color: '#6d7d72' }}>Penghematan BBM</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--green)', marginTop: 2 }}>
+                      <div className="summary-label">Penghematan BBM</div>
+                      <div className="summary-val" style={{ color: 'var(--green)' }}>
                         {fmt(cvrpSolution.fuelSavedLiters)} L
                       </div>
-                      <div style={{ fontSize: 8.5, color: '#6d7d72' }}>Solar Industri</div>
+                      <div className="summary-sub">Solar Industri</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 9, color: '#6d7d72' }}>Reduksi Emisi</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#2a5a3f', marginTop: 2 }}>
+                      <div className="summary-label">Reduksi Emisi</div>
+                      <div className="summary-val" style={{ color: '#2a5a3f' }}>
                         {fmt(cvrpSolution.co2SavedKg)} kg
                       </div>
-                      <div style={{ fontSize: 8.5, color: '#6d7d72' }}>CO2 Ekivalen</div>
+                      <div className="summary-sub">CO2 Ekivalen</div>
                     </div>
                   </div>
 
@@ -1435,6 +1424,13 @@ export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = '
                 <div className="module-card-head">
                   <h2>Urutan Pemberhentian Armada (Closed-Loop)</h2>
                   <span className="meta">7 Titik Kunjungan</span>
+                </div>
+
+                <div className="mobile-table-hint">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span>Geser tabel ke samping untuk melihat rincian waypoint armada</span>
                 </div>
 
                 <div className="data-table-wrap">
@@ -1628,6 +1624,13 @@ export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = '
               <div className="module-card-head">
                 <h2>Master Inventaris Tempat Penampungan Sementara (TPS)</h2>
                 <span className="meta">Total: {nodes.length} Titik</span>
+              </div>
+
+              <div className="mobile-table-hint">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>Geser tabel ke samping untuk melihat kolom kapasitas, sensor, dan status</span>
               </div>
 
               <div className="data-table-wrap">
