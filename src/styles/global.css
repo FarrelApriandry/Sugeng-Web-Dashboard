@@ -416,3 +416,358 @@
       .diag-sensor-grid { grid-template-columns:1fr; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; } }
+
+/* ==========================================================================
+   AI Prediction Card Styles (Diurnal TTO)
+   ========================================================================== */
+.prediction-card {
+  --p-amber: #b77924;
+  --p-red: #c34d4d;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+.prediction-card .p-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--line);
+}
+
+.prediction-card .p-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.prediction-card .p-subtitle {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  letter-spacing: .7px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.prediction-card .p-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.prediction-card .p-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.prediction-card .p-main {
+  padding: 15px 0 13px;
+}
+
+.prediction-card .p-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+
+.prediction-card .p-time {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.prediction-card .p-time strong {
+  font-family: var(--mono);
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: -1.5px;
+  color: var(--p-amber);
+}
+
+.prediction-card .p-time strong.critical {
+  color: var(--p-red);
+}
+
+.prediction-card .p-time strong span {
+  font-size: 15px;
+  margin-left: 2px;
+}
+
+.prediction-card .p-clock {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.prediction-card .p-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--p-amber);
+}
+
+.prediction-card .p-warning.critical {
+  color: var(--p-red);
+}
+
+.prediction-card .p-warning i {
+  width: 7px;
+  height: 7px;
+  background: var(--p-amber);
+  border-radius: 2px;
+}
+
+.prediction-card .p-warning.critical i {
+  background: var(--p-red);
+}
+
+.prediction-card .p-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.prediction-card .p-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.prediction-card .p-metric + .p-metric {
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+}
+
+.prediction-card .p-metric small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.prediction-card .p-metric strong {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.prediction-card .p-metric .amber {
+  color: var(--p-amber);
+}
+
+.prediction-card .p-metric .red {
+  color: var(--p-red);
+}
+
+.prediction-card .p-forecast {
+  padding: 14px 0 12px;
+}
+
+.prediction-card .p-forecast-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.prediction-card .p-forecast-head strong {
+  display: block;
+  font-size: 11px;
+  color: var(--ink);
+}
+
+.prediction-card .p-forecast-head small {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.prediction-card .p-interval {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.prediction-card .p-chart {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.prediction-card .p-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.prediction-card .p-bar-time {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.prediction-card .p-track {
+  width: 100%;
+  height: 58px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--surface-soft);
+}
+
+.prediction-card .p-fill {
+  width: 100%;
+  background: var(--p-amber);
+  border-radius: 2px 2px 0 0;
+  transition: height .3s ease;
+}
+
+.prediction-card .p-bar-item.critical .p-fill {
+  background: var(--p-red);
+}
+
+.prediction-card .p-bar-item.safe .p-fill {
+  background: var(--green);
+}
+
+.prediction-card .p-bar-item strong {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--p-amber);
+}
+
+.prediction-card .p-bar-item.critical strong {
+  color: var(--p-red);
+}
+
+.prediction-card .p-bar-item.safe strong {
+  color: var(--green);
+}
+
+.prediction-card .p-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 11px;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.prediction-card .p-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.prediction-card .p-legend i {
+  width: 6px;
+  height: 6px;
+  background: var(--p-amber);
+  border-radius: 1px;
+}
+
+.prediction-card .p-legend i.red {
+  background: var(--p-red);
+}
+
+.prediction-card .p-recommendation {
+  padding: 10px 11px;
+  border-left: 2px solid var(--p-amber);
+  background: var(--surface-soft);
+  margin-bottom: 12px;
+}
+
+.prediction-card .p-recommendation.critical {
+  border-left-color: var(--p-red);
+}
+
+.prediction-card .p-rec-label {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  color: var(--p-amber);
+  margin-bottom: 5px;
+}
+
+.prediction-card .p-recommendation.critical .p-rec-label {
+  color: var(--p-red);
+}
+
+.prediction-card .p-recommendation p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.prediction-card .p-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.prediction-card .p-btn {
+  min-height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+.prediction-card .p-btn:first-child {
+  flex: 1;
+}
+
+.prediction-card .p-btn:hover {
+  background: var(--surface-soft);
+  border-color: var(--muted);
+}
+
+.prediction-card .p-btn.active {
+  background: #fbefed;
+  border-color: #c94e47;
+  color: #c94e47;
+}
+
+.prediction-card .p-btn small {
+  font-size: 8px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.prediction-card .p-btn:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
