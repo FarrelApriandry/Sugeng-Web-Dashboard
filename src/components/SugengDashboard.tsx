@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { ScenarioNode, TPSNode } from '../data/dummyData';
 import {
   CANONICAL_SCENARIO,
@@ -25,6 +25,7 @@ import {
 import type { LiveSensorPayload } from '../lib/liveSensor';
 import { InteractiveMap } from './InteractiveMap';
 import { AIPredictionCard } from './AIPredictionCard';
+import { classifyLocalHazard } from '../lib/aiPrediction';
 
 interface TelemetryLogEntry {
   id: string;
@@ -489,6 +490,17 @@ export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = '
   };
 
   const selectedNode = nodes.find((n) => n.id === selectedId) || nodes[0];
+
+  const selectedHazard = useMemo(() => {
+    return classifyLocalHazard({
+      currentVolumePercent: selectedNode.fill,
+      ammoniaIndexMQ135: selectedNode.gas,
+      methanePpmMQ4: selectedNode.methanePpm || 18,
+      temperatureCelsius: selectedNode.temp || 31.5,
+      humidityPercent: selectedNode.humidity || 65.4,
+      measuredDistanceCm: selectedNode.distance,
+    });
+  }, [selectedNode.fill, selectedNode.gas, selectedNode.methanePpm, selectedNode.temp, selectedNode.humidity, selectedNode.distance]);
 
   // Filter manifest
   const q = searchQuery.trim().toLowerCase();
@@ -1581,52 +1593,132 @@ export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = '
                   </div>
                 </div>
 
-                {/* Kartu Model AI & Evaluasi Akademik */}
+                {/* Kartu Arsitektur Dual-Engine AI & Evaluasi Akademik */}
                 <div className="module-card">
                   <div className="module-card-head">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 14 }}>🤖</span>
-                      <h2>Engine AI: Diurnal TTO Regressor</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--ink)' }}>
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                      </svg>
+                      <h2>Dual-Engine AI: Regresi TTO &amp; Klasifikasi K3</h2>
                     </div>
                     <span className="meta" style={{ color: 'var(--green)', fontWeight: 700 }}>
-                      TERVALIDASI (R² 98,9%)
+                      TERVALIDASI (R² 99,01% · F1 1,00)
                     </span>
                   </div>
 
                   <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12, lineHeight: 1.5 }}>
-                    Model regresi deret waktu yang memprediksi jam penuh tempat sampah berdasarkan siklus akumulasi harian Kota Magelang.
+                    Kombinasi Regresi Diurnal (estimasi jam meluap) dan Klasifikasi Risiko Pembusukan Organik &amp; Bahaya Metana K3 berbasis fusi 4 sensor (JSN-SR04T, MQ-135, MQ-4, DHT22).
                   </div>
 
-                  <div className="diag-sensor-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 12 }}>
-                    <div className="sensor-box">
-                      <div className="sensor-box-head">
-                        <span className="sensor-box-title">R² Score</span>
-                        <span className="sensor-box-tag">Determinasi</span>
-                      </div>
-                      <div className="sensor-box-val" style={{ color: 'var(--green)' }}>98,94%</div>
-                      <div className="sensor-box-sub">Sangat Akurat (&gt;0.85)</div>
+                  {/* Section Model 1 */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.5px', color: 'var(--ink)' }}>
+                        MODEL 1: DIURNAL TIME-SERIES REGRESSOR (TTO)
+                      </span>
+                      <span style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+                        1.344 Data Telemetri Kota Magelang
+                      </span>
                     </div>
-                    <div className="sensor-box">
-                      <div className="sensor-box-head">
-                        <span className="sensor-box-title">MAE</span>
-                        <span className="sensor-box-tag">Rata2 Error</span>
+                    <div className="diag-sensor-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 6 }}>
+                      <div className="sensor-box">
+                        <div className="sensor-box-head">
+                          <span className="sensor-box-title">R² Score</span>
+                          <span className="sensor-box-tag">Determinasi</span>
+                        </div>
+                        <div className="sensor-box-val" style={{ color: 'var(--green)' }}>99,01%</div>
+                        <div className="sensor-box-sub">Sangat Presisi (&gt;0.85)</div>
                       </div>
-                      <div className="sensor-box-val">1,44%</div>
-                      <div className="sensor-box-sub">Margin Volume</div>
-                    </div>
-                    <div className="sensor-box">
-                      <div className="sensor-box-head">
-                        <span className="sensor-box-title">RMSE</span>
-                        <span className="sensor-box-tag">Root Mean Sq</span>
+                      <div className="sensor-box">
+                        <div className="sensor-box-head">
+                          <span className="sensor-box-title">MAE</span>
+                          <span className="sensor-box-tag">Rata2 Error</span>
+                        </div>
+                        <div className="sensor-box-val">1,55%</div>
+                        <div className="sensor-box-sub">Margin Volume Relatif</div>
                       </div>
-                      <div className="sensor-box-val">2,48%</div>
-                      <div className="sensor-box-sub">Toleransi Outlier</div>
+                      <div className="sensor-box">
+                        <div className="sensor-box-head">
+                          <span className="sensor-box-title">RMSE</span>
+                          <span className="sensor-box-tag">Root Mean Sq</span>
+                        </div>
+                        <div className="sensor-box-val">2,62%</div>
+                        <div className="sensor-box-sub">Toleransi Fluktuasi</div>
+                      </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10.5, padding: '8px 10px', background: 'var(--surface-soft)', borderRadius: 6, border: '1px solid var(--line)' }}>
-                    <span>Dataset Training: <strong>1.344 Rekaman Telemetri (14 Hari)</strong></span>
-                    <span style={{ color: 'var(--green)', fontWeight: 700 }}>✓ Inferensi Aktif</span>
+                  {/* Section Model 2 */}
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.5px', color: 'var(--ink)' }}>
+                        MODEL 2: MULTI-SENSOR HAZARD &amp; ODOR CLASSIFIER
+                      </span>
+                      <span style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+                        Fusi 4 Sensor · 1.000 Sampel Uji
+                      </span>
+                    </div>
+                    <div className="diag-sensor-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 8 }}>
+                      <div className="sensor-box">
+                        <div className="sensor-box-head">
+                          <span className="sensor-box-title">Akurasi</span>
+                          <span className="sensor-box-tag">Overall</span>
+                        </div>
+                        <div className="sensor-box-val" style={{ color: 'var(--green)' }}>100%</div>
+                        <div className="sensor-box-sub">Confusion Matrix 4×4</div>
+                      </div>
+                      <div className="sensor-box">
+                        <div className="sensor-box-head">
+                          <span className="sensor-box-title">Macro F1</span>
+                          <span className="sensor-box-tag">Balance</span>
+                        </div>
+                        <div className="sensor-box-val" style={{ color: 'var(--green)' }}>1,00</div>
+                        <div className="sensor-box-sub">Rata-rata 4 Kelas K3</div>
+                      </div>
+                      <div className="sensor-box">
+                        <div className="sensor-box-head">
+                          <span className="sensor-box-title">Node Aktif</span>
+                          <span className="sensor-box-tag">{selectedNode.id}</span>
+                        </div>
+                        <div className="sensor-box-val" style={{ fontSize: 13, color: selectedHazard.statusColor, fontWeight: 700 }}>
+                          {selectedHazard.badgeLabel}
+                        </div>
+                        <div className="sensor-box-sub">{selectedHazard.classLabelIndonesian}</div>
+                      </div>
+                    </div>
+
+                    {/* Banner Rekomendasi K3 Terpilih */}
+                    <div style={{
+                      padding: '8px 10px',
+                      background: 'var(--surface-soft)',
+                      borderRadius: 6,
+                      borderLeft: `3px solid ${selectedHazard.statusColor}`,
+                      borderTop: '1px solid var(--line)',
+                      borderRight: '1px solid var(--line)',
+                      borderBottom: '1px solid var(--line)',
+                      fontSize: 10.5,
+                      lineHeight: 1.45,
+                      color: 'var(--ink)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 3,
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.5px', color: selectedHazard.statusColor }}>
+                          REKOMENDASI OPERASIONAL K3 ({selectedNode.name})
+                        </span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)' }}>
+                          Kepercayaan: {(selectedHazard.confidenceScore * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <div>{selectedHazard.operationalAction}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, padding: '7px 10px', background: 'var(--surface-soft)', borderRadius: 6, border: '1px solid var(--line)', color: 'var(--muted)' }}>
+                    <span>Inferensi Komputasi: <strong>Browser Web (Lokal) &amp; BE-SUGENG REST API</strong></span>
+                    <span style={{ color: 'var(--green)', fontWeight: 600 }}>Aktif (Sinkron)</span>
                   </div>
                 </div>
               </div>

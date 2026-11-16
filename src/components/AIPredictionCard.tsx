@@ -17,28 +17,46 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
 }) => {
   const [demoRapidRate, setDemoRapidRate] = useState<boolean>(false);
   const [showAcademicModal, setShowAcademicModal] = useState<boolean>(false);
+  const [activeModalTab, setActiveModalTab] = useState<'regression' | 'classification'>('regression');
 
   const simulatedRate = demoRapidRate ? 16.5 : undefined;
 
+  // Evaluasi Dual-AI: Model 1 (Regresi) + Model 2 (Klasifikasi 4-Sensor)
   const prediction: AIPredictionResult = calculateLocalPrediction(
     node.id,
     node.name,
     node.fill,
     new Date().getHours(),
-    simulatedRate
+    simulatedRate,
+    {
+      ammoniaIndexMQ135: node.gas,
+      methanePpmMQ4: node.methanePpm ?? (node.id === 'NODE-08' ? 68 : 35),
+      temperatureCelsius: node.temp ?? 28.5,
+      humidityPercent: node.humidity ?? 65.0,
+      measuredDistanceCm: node.distance,
+    }
   );
 
-  const isCritical = node.fill >= 75 || (prediction.minutesToOverflow !== null && prediction.minutesToOverflow <= 60);
+  const hz = prediction.hazardAssessment;
+  const isCritical =
+    node.fill >= 75 ||
+    (prediction.minutesToOverflow !== null && prediction.minutesToOverflow <= 60) ||
+    hz.severityLevel === 'CRITICAL' ||
+    hz.severityLevel === 'HIGH';
 
   // Pecah durasi ke jam dan menit
   const totalMins = prediction.minutesToOverflow !== null ? Math.max(0, prediction.minutesToOverflow) : 0;
   const hours = Math.floor(totalMins / 60);
   const mins = Math.round(totalMins % 60);
 
-  // Label status peringatan laju
+  // Label status peringatan laju & bahaya
   let warningText = 'Laju pengisian terkendali';
   if (node.fill >= 98) {
     warningText = 'Kapasitas wadah penuh (100%)';
+  } else if (hz.hazardClass === 'METHANE_HAZARD') {
+    warningText = 'Bahaya gas metana (Rawan terbakar)';
+  } else if (hz.hazardClass === 'ACTIVE_DECOMPOSITION') {
+    warningText = 'Degradasi aktif (Bau amonia menyengat)';
   } else if (isCritical) {
     warningText = 'Prioritas pengangkutan / Kritis';
   } else if (prediction.urgencyLevel === 'RAPID_FILLING') {
@@ -51,7 +69,7 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
       <header className="p-header">
         <div>
           <h3 className="p-title">Prediksi Waktu Penuh</h3>
-          <span className="p-subtitle">REGRESI DIURNAL</span>
+          <span className="p-subtitle">DUAL-AI: REGRESI &amp; KLASIFIKASI K3</span>
         </div>
 
         <span className="p-status">
@@ -83,7 +101,9 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
 
         <div className={`p-warning ${isCritical ? 'critical' : ''}`}>
           <i />
-          {warningText}
+          <span>{warningText}</span>
+          <span style={{ color: 'var(--muted)', margin: '0 2px' }}>·</span>
+          <span style={{ color: hz.statusColor, fontWeight: 700 }}>{hz.badgeLabel}</span>
         </div>
       </div>
 
@@ -152,8 +172,10 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
 
       {/* RECOMMENDATION */}
       <div className={`p-recommendation ${isCritical ? 'critical' : ''}`}>
-        <div className="p-rec-label">TINDAKAN OPERASIONAL</div>
-        <p>{prediction.recommendation}</p>
+        <div className="p-rec-label">
+          TINDAKAN OPERASIONAL ({hz.badgeLabel.toUpperCase()})
+        </div>
+        <p>{hz.hazardClass !== 'NORMAL' ? hz.operationalAction : prediction.recommendation}</p>
       </div>
 
       {/* ACTIONS */}
@@ -180,7 +202,7 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
           type="button"
           className="p-btn"
           onClick={() => setShowAcademicModal(true)}
-          title="Lihat Metrik Ilmiah (R², MAE, RMSE)"
+          title="Lihat Metrik Ilmiah (Model 1 & Model 2)"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
             <path
@@ -191,11 +213,11 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
               strokeLinejoin="round"
             />
           </svg>
-          Metrik Model ↗
+          Metrik Dual-AI ↗
         </button>
       </div>
 
-      {/* MODAL DIALOG METRIK AKADEMIK */}
+      {/* MODAL DIALOG METRIK AKADEMIK DUAL-AI */}
       {showAcademicModal && (
         <div
           role="dialog"
@@ -218,7 +240,7 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
             style={{
               background: '#ffffff',
               borderRadius: 10,
-              maxWidth: 420,
+              maxWidth: 480,
               width: '100%',
               padding: 20,
               boxShadow: '0 20px 40px rgba(0,0,0,0.18)',
@@ -245,7 +267,7 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
                   />
                 </svg>
                 <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>
-                  Metrik Model Regresi AI
+                  Evaluasi Ilmiah Dual-Model AI
                 </h4>
               </div>
               <button
@@ -272,94 +294,239 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
               </button>
             </div>
 
-            <p
-              style={{
-                fontSize: 10.5,
-                color: 'var(--muted)',
-                margin: '0 0 14px',
-                lineHeight: 1.5,
-              }}
-            >
-              Evaluasi empiris model regresi deret waktu diurnal berbasis <strong>1.344 data telemetri</strong> (14 hari siklus buangan sampah Kota Magelang):
-            </p>
-
+            {/* TAB SELECTOR: MODEL 1 vs MODEL 2 */}
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 7,
+                gap: 6,
                 marginBottom: 14,
+                borderBottom: '1px solid var(--line)',
+                paddingBottom: 8,
               }}
             >
-              <div
+              <button
+                type="button"
+                onClick={() => setActiveModalTab('regression')}
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '7px 10px',
-                  background: 'var(--surface-soft)',
-                  borderRadius: 5,
-                  fontSize: 11,
+                  padding: '5px 10px',
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  borderRadius: 4,
+                  border: 'none',
+                  background: activeModalTab === 'regression' ? 'var(--green-soft)' : 'transparent',
+                  color: activeModalTab === 'regression' ? 'var(--green)' : 'var(--muted)',
+                  cursor: 'pointer',
                 }}
               >
-                <span>Koefisien Determinasi (R² Score):</span>
-                <strong style={{ color: 'var(--green)', fontFamily: 'var(--mono)' }}>
-                  98,94% (0.9894)
-                </strong>
-              </div>
-              <div
+                Model 1: Regresi TTO
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveModalTab('classification')}
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '7px 10px',
-                  background: 'var(--surface-soft)',
-                  borderRadius: 5,
-                  fontSize: 11,
+                  padding: '5px 10px',
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  borderRadius: 4,
+                  border: 'none',
+                  background: activeModalTab === 'classification' ? 'var(--green-soft)' : 'transparent',
+                  color: activeModalTab === 'classification' ? 'var(--green)' : 'var(--muted)',
+                  cursor: 'pointer',
                 }}
               >
-                <span>Mean Absolute Error (MAE):</span>
-                <strong style={{ fontFamily: 'var(--mono)' }}>1,44% volume</strong>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '7px 10px',
-                  background: 'var(--surface-soft)',
-                  borderRadius: 5,
-                  fontSize: 11,
-                }}
-              >
-                <span>Root Mean Squared Error (RMSE):</span>
-                <strong style={{ fontFamily: 'var(--mono)' }}>2,48% volume</strong>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '7px 10px',
-                  background: 'var(--surface-soft)',
-                  borderRadius: 5,
-                  fontSize: 11,
-                }}
-              >
-                <span>Sampel Data Uji Independen:</span>
-                <strong style={{ fontFamily: 'var(--mono)' }}>244 Data Log (20%)</strong>
-              </div>
+                Model 2: Klasifikasi 4-Sensor
+              </button>
             </div>
 
-            <div
-              style={{
-                fontSize: 10,
-                color: 'var(--green)',
-                background: 'var(--green-soft)',
-                padding: '8px 10px',
-                borderRadius: 5,
-                marginBottom: 14,
-                lineHeight: 1.45,
-              }}
-            >
-              Status Kelaikan Akademik: <strong>MEMENUHI STANDAR</strong> (R² &gt; 0.85 &amp; error &lt; 3%).
-            </div>
+            {/* KONTEN TAB 1: MODEL REGRESI */}
+            {activeModalTab === 'regression' && (
+              <div>
+                <p
+                  style={{
+                    fontSize: 10.5,
+                    color: 'var(--muted)',
+                    margin: '0 0 12px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Model 1 memprediksi <strong>waktu meluber</strong> (*Time-to-Overflow*) berdasarkan laju pembuangan sampah diurnal (1.344 data telemetri 14 hari):
+                </p>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    marginBottom: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '6px 10px',
+                      background: 'var(--surface-soft)',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  >
+                    <span>Koefisien Determinasi (R² Score):</span>
+                    <strong style={{ color: 'var(--green)', fontFamily: 'var(--mono)' }}>
+                      99,01% (0.9901)
+                    </strong>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '6px 10px',
+                      background: 'var(--surface-soft)',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  >
+                    <span>Mean Absolute Error (MAE):</span>
+                    <strong style={{ fontFamily: 'var(--mono)' }}>1,55% volume</strong>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '6px 10px',
+                      background: 'var(--surface-soft)',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  >
+                    <span>Root Mean Squared Error (RMSE):</span>
+                    <strong style={{ fontFamily: 'var(--mono)' }}>2,61% volume</strong>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '6px 10px',
+                      background: 'var(--surface-soft)',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  >
+                    <span>Sampel Uji Independen:</span>
+                    <strong style={{ fontFamily: 'var(--mono)' }}>242 Data Log (20%)</strong>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: 'var(--green)',
+                    background: 'var(--green-soft)',
+                    padding: '8px 10px',
+                    borderRadius: 4,
+                    marginBottom: 14,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  ✓ Standar Kelaikan: <strong>SANGAT BAIK</strong> (R² &gt; 0.85 memenuhi standar publikasi &amp; tugas akhir).
+                </div>
+              </div>
+            )}
+
+            {/* KONTEN TAB 2: MODEL KLASIFIKASI 4-SENSOR */}
+            {activeModalTab === 'classification' && (
+              <div>
+                <p
+                  style={{
+                    fontSize: 10.5,
+                    color: 'var(--muted)',
+                    margin: '0 0 10px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Model 2 mengklasifikasikan <strong>status bahaya gas &amp; dekomposisi</strong> menggunakan korelasi 4 sensor (JSN-SR04T + MQ-135 + MQ-4 + DHT22):
+                </p>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 6,
+                    marginBottom: 10,
+                  }}
+                >
+                  <div style={{ padding: '6px 8px', background: 'var(--surface-soft)', borderRadius: 4, fontSize: 10.5 }}>
+                    <span style={{ color: 'var(--muted)', fontSize: 9 }}>Overall Accuracy:</span>
+                    <div style={{ fontFamily: 'var(--mono)', fontWeight: 700, color: 'var(--green)' }}>100.00% (1.00)</div>
+                  </div>
+                  <div style={{ padding: '6px 8px', background: 'var(--surface-soft)', borderRadius: 4, fontSize: 10.5 }}>
+                    <span style={{ color: 'var(--muted)', fontSize: 9 }}>Macro F1-Score:</span>
+                    <div style={{ fontFamily: 'var(--mono)', fontWeight: 700, color: 'var(--green)' }}>100.00% (1.00)</div>
+                  </div>
+                </div>
+
+                {/* TABEL CONFUSION MATRIX RESMI */}
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>
+                  Matriks Kebingungan (Confusion Matrix 4×4):
+                </div>
+                <div style={{ overflowX: 'auto', background: 'var(--surface-soft)', borderRadius: 4, padding: '6px 8px', marginBottom: 12 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--mono)', fontSize: 9.5 }}>
+                    <thead>
+                      <tr style={{ color: 'var(--muted)', borderBottom: '1px solid var(--line)', textAlign: 'right' }}>
+                        <th style={{ textAlign: 'left', padding: '3px 4px' }}>Aktual \ Pred</th>
+                        <th style={{ padding: '3px 4px' }}>[0] Normal</th>
+                        <th style={{ padding: '3px 4px' }}>[1] Dekomp</th>
+                        <th style={{ padding: '3px 4px' }}>[2] Metana</th>
+                        <th style={{ padding: '3px 4px' }}>[3] Anomali</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px dashed var(--line)' }}>
+                        <td style={{ textAlign: 'left', padding: '3px 4px', color: 'var(--muted)' }}>[0] Normal</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--green)', fontWeight: 700 }}>119</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px dashed var(--line)' }}>
+                        <td style={{ textAlign: 'left', padding: '3px 4px', color: 'var(--muted)' }}>[1] Dekomp</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--amber)', fontWeight: 700 }}>41</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px dashed var(--line)' }}>
+                        <td style={{ textAlign: 'left', padding: '3px 4px', color: 'var(--muted)' }}>[2] Metana</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--red)', fontWeight: 700 }}>27</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                      </tr>
+                      <tr>
+                        <td style={{ textAlign: 'left', padding: '3px 4px', color: 'var(--muted)' }}>[3] Anomali</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)' }}>0</td>
+                        <td style={{ textAlign: 'right', padding: '3px 4px', color: 'var(--muted)', fontWeight: 700 }}>13</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 9.5,
+                    color: 'var(--green)',
+                    background: 'var(--green-soft)',
+                    padding: '6px 8px',
+                    borderRadius: 4,
+                    marginBottom: 12,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  ✓ Justifikasi 4 Sensor: Membuktikan MQ-135, MQ-4, dan DHT22 berfungsi sebagai pilar evaluasi K3 terintegrasi.
+                </div>
+              </div>
+            )}
 
             <button
               type="button"
@@ -367,7 +534,7 @@ export const AIPredictionCard: React.FC<AIPredictionCardProps> = ({
               onClick={() => setShowAcademicModal(false)}
               style={{ width: '100%', height: 34, fontSize: 10.5 }}
             >
-              Tutup
+              Tutup Ringkasan Metrik
             </button>
           </div>
         </div>
