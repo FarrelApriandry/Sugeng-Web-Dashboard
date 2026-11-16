@@ -533,22 +533,12 @@ export const SugengDashboard: React.FC<SugengDashboardProps> = ({ initialNav = '
       {/* Topbar Navigasi Institusional */}
       <header className="topbar">
         <div className="brand" aria-label="SUGENG">
-          <div className="brand-mark" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M19.5 4.5C12.8 4.7 7.2 6.6 5 11.1c-1.2 2.4-.4 5.3 1.8 6.4 2.3 1.1 5.4.1 7-2.2 1.4-2 1.7-4.6 1.8-6.6-2.5 1.1-4.7 2.5-6.3 4.4"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M4 20c2.7-4 6.2-6.8 10.9-9.1"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
+          <div className="brand-mark" aria-hidden="true" style={{ background: 'transparent', boxShadow: 'none' }}>
+            <img
+              src="/LOGO_SUGENG_IMUP.png"
+              alt="Logo SUGENG"
+              style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 8 }}
+            />
           </div>
           <div>
             <a
